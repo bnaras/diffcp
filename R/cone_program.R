@@ -173,7 +173,14 @@
     scs_status <- CLARABEL2SCS_STATUS_MAP[status_str]
     if (is.na(scs_status)) scs_status <- "Failure"
 
-    if (scs_status != "Solved") {
+    inaccurate_status <- c("Optimal Inaccurate", "Infeasible Inaccurate",
+                           "Unbounded Inaccurate")
+    if (scs_status == "Optimal Inaccurate") {
+      ## Python's Clarabel branch (cone_program.py:540-626) does NOT
+      ## error on AlmostSolved; downstream code accepts the answer.
+      ## We only warn here.
+      cli::cli_warn("Clarabel returned {.val {status_str}}.")
+    } else if (scs_status != "Solved") {
       if (raise_on_error) {
         cli::cli_abort("Clarabel returned status {.val {status_str}}.")
       } else {

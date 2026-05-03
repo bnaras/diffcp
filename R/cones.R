@@ -138,9 +138,23 @@ pi <- function(x, cones, dual = FALSE) {
         offset <- offset + sz_vec
       }
     } else if (cone == "ep" || cone == "ed") {
-      ## Exponential cones: each entry is the *number* of cones; vector
-      ## size is 3 * count.
-      cli::cli_abort("Exponential cone not yet implemented (Phase 2c).")
+      ## DIFFCP SOURCE: diffcp/cones.py:80-114 (EXP / EXP_DUAL branch
+      ## of _proj).  EXP_DUAL is handled by toggling `dual`:
+      ##   EXP_DUAL, dual=F  ->  EXP, dual=T
+      ##   EXP_DUAL, dual=T  ->  EXP, dual=F
+      ## Within EXP itself, dual=T uses Moreau:
+      ##   Pi_{K_exp^*}(x) = x + Pi_{K_exp}(-x).
+      eff_dual <- if (cone == "ed") !dual else dual
+      for (count in sz) {
+        for (k in seq_len(count)) {
+          idx <- (offset + 1L):(offset + 3L)
+          xi <- x[idx]
+          if (eff_dual) xi <- -xi
+          proj <- as.numeric(cpp_project_exp_cone(xi))
+          out[idx] <- if (eff_dual) x[idx] + proj else proj
+          offset <- offset + 3L
+        }
+      }
     } else {
       ## Scalar-dim cones: zero, nonneg.
       for (d in sz) {
