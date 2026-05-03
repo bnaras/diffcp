@@ -1,4 +1,4 @@
-## CVXPY SOURCE: diffcp/_diffcp.cpp::dprojection (C++ extension).
+## DIFFCP SOURCE: diffcp/cpp/src/dprojection.cpp (C++ extension).
 ##
 ## Per-cone Jacobians of the projection operator.
 ##
@@ -46,7 +46,7 @@
 # -- Single SOC -----------------------------------------------------
 ## Q^{n+1} = { (t, z) : ||z|| <= t }. Self-dual.
 ##
-## CVXPY SOURCE: diffcp/_diffcp.cpp::dprojection (SOC branch).
+## DIFFCP SOURCE: diffcp/cpp/src/dprojection.cpp (SOC branch).
 ## At x = (t, z), let n = ||z||.
 ##   - If x is in interior of K (n < t): dPi = I.
 ##   - If x is in interior of -K (n < -t): dPi = 0.

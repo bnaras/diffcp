@@ -1,4 +1,4 @@
-## CVXPY SOURCE: diffcp/cones.py (auxiliary utilities).
+## DIFFCP SOURCE: diffcp/cones.py (auxiliary utilities).
 ##
 ## Small helpers shared across cone projection / Jacobian code.
 

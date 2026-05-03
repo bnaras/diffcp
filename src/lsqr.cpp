@@ -1,4 +1,4 @@
-// CVXPY SOURCE: diffcp/_diffcp.cpp::lsqr (Eigen LSQR wrapper).
+// DIFFCP SOURCE: diffcp/cpp/src/lsqr.cpp (Eigen LSQR wrapper).
 //
 // Phase 2 scaffolding. The full LSQR-on-LinearOperator implementation
 // lands in a follow-on commit; this file establishes the

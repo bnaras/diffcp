@@ -1,4 +1,4 @@
-## CVXPY SOURCE: diffcp/cones.py (Python source of truth).
+## DIFFCP SOURCE: diffcp/cones.py (Python source of truth).
 ##
 ## Cone projections: each `proj_*` function takes a numeric vector `x`
 ## of the appropriate length and returns Pi_K(x), the projection onto
@@ -42,7 +42,7 @@ parse_cone_dict <- function(cone_dict) {
 ## Q^{n+1} = { (t, z) in R x R^n : ||z||_2 <= t }.
 ## Self-dual: same projection for primal and dual.
 ##
-## CVXPY SOURCE: diffcp/cones.py:88-97 (_proj branch for SOC).
+## DIFFCP SOURCE: diffcp/cones.py:88-97 (_proj branch for SOC).
 .proj_soc_one <- function(x, dual = FALSE) {
   if (length(x) == 0L) return(x)
   t <- x[1L]

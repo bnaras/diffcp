@@ -1,4 +1,4 @@
-## CVXPY SOURCE: cvxpy/__init__.py (analogue: diffcp/__init__.py)
+## DIFFCP SOURCE: diffcp/__init__.py
 ##
 ## Package-level documentation and namespace setup.
 
@@ -16,24 +16,51 @@
 #' @useDynLib diffcp, .registration = TRUE
 "_PACKAGE"
 
-## CVXPY SOURCE: diffcp/cones.py:5-11
-## Cone tag constants (string keys matching SCS / Clarabel conventions).
+## DIFFCP SOURCE: diffcp/cones.py:5-11
+
+#' Cone tag constants
+#'
+#' String keys matching the SCS / Clarabel cone conventions. Used as
+#' names in the `cone_dict` argument to [solve_only()] and
+#' [solve_and_derivative()], and in the `(name, size)` pairs returned
+#' by [parse_cone_dict()].
+#'
+#' @format Character scalars (and one character vector, `CONES`).
+#' @details
+#'   * `ZERO` (`"z"`): zero cone (equality constraints).
+#'   * `EQ_DIM`: alias of `ZERO`.
+#'   * `POS` (`"l"`): nonnegative orthant.
+#'   * `SOC` (`"q"`): second-order cone.
+#'   * `PSD` (`"s"`): symmetric positive semidefinite cone.
+#'   * `EXP` (`"ep"`): primal exponential cone.
+#'   * `EXP_DUAL` (`"ed"`): dual exponential cone.
+#'   * `CONES`: the canonical SCS ordering of cone tags.
+#' @name diffcp-cones
+#' @keywords internal
+NULL
 
 #' @export
+#' @rdname diffcp-cones
 ZERO     <- "z"
 #' @export
+#' @rdname diffcp-cones
 EQ_DIM   <- ZERO
 #' @export
+#' @rdname diffcp-cones
 POS      <- "l"
 #' @export
+#' @rdname diffcp-cones
 SOC      <- "q"
 #' @export
+#' @rdname diffcp-cones
 PSD      <- "s"
 #' @export
+#' @rdname diffcp-cones
 EXP      <- "ep"
 #' @export
+#' @rdname diffcp-cones
 EXP_DUAL <- "ed"
 
-## The ordering of CONES matches SCS.
 #' @export
+#' @rdname diffcp-cones
 CONES <- c(ZERO, POS, SOC, PSD, EXP, EXP_DUAL)
