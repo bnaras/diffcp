@@ -217,13 +217,29 @@ solve_only <- function(A, b, c, cone_dict,
 solve_and_derivative <- function(A, b, c, cone_dict,
                                  P = NULL,
                                  solve_method = "Clarabel",
-                                 mode = "lsqr",
+                                 mode = "dense",
                                  warm_start = NULL,
                                  ...) {
-  cli::cli_abort(c(
-    "{.fn solve_and_derivative} not yet implemented (Phase 2 scaffolding).",
-    "i" = "Forward solve via {.fn solve_only} is fully functional.",
-    "i" = "Cone projections (Zero, Nonneg, SOC) and their Jacobians are in place.",
-    "i" = "The M operator and LSQR-based derivative arrive in subsequent commits per {.file diffcp/cone_program.py:632-902}."
-  ))
+  if (!mode %in% c("dense", "lsqr")) {
+    cli::cli_abort(c(
+      "Unsupported {.arg mode} = {.val {mode}}.",
+      "i" = "Supported modes in this development version: 'dense' (functional), 'lsqr' (errors)."
+    ))
+  }
+  if (!is.null(P)) {
+    cli::cli_abort("QP objective {.arg P} not yet supported (Phase 2-QP).")
+  }
+  if (any(is.nan(A@x))) cli::cli_abort("Found a NaN in {.arg A}.")
+  A <- Matrix::drop0(A)
+
+  res <- .solve_internal(A, b, c, cone_dict,
+                         warm_start = warm_start,
+                         solve_method = solve_method,
+                         P = P, ...)
+  x <- res$x; y <- res$y; s <- res$s
+
+  cones <- parse_cone_dict(cone_dict)
+  closures <- .make_derivative_closures(A, b, c, x, y, s, cones, mode)
+
+  list(x = x, y = y, s = s, D = closures$D, DT = closures$DT)
 }

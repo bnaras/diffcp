@@ -126,13 +126,3 @@ test_that("solve_only rejects warm_start for Clarabel", {
   )
 })
 
-test_that("solve_and_derivative still errors with phase-pointer", {
-  A <- Matrix::Matrix(matrix(c(1, -1, 0, 0, 1, 0, -1, 0, 1, 0, 0, -1),
-                             nrow = 4, ncol = 3), sparse = TRUE)
-  b <- c(1, 0, 0, 0)
-  c <- c(1, 2, 3)
-  expect_error(
-    diffcp::solve_and_derivative(A, b, c, list(z = 1L, l = 3L)),
-    "not yet implemented"
-  )
-})
