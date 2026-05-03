@@ -171,14 +171,52 @@ subject to  Ax + s = b   subject to  A'y + c = 0
 <div class="section level2">
 <h2 id="differences-from-python-diffcp">Differences from Python diffcp<a class="anchor" aria-label="anchor" href="#differences-from-python-diffcp"></a>
 </h2>
+<p>The R port is a direct line-for-line port of the C++ numerical core (<code>cpp/src/{linop,cones,deriv,lsqr}.cpp</code>) called via RcppEigen, plus an R-level orchestration layer mirroring <code>cone_program.py</code> and <code>cones.py</code>. Two implementation choices and four feature deferrals:</p>
+<div class="section level3">
+<h3 id="implementation-choices">Implementation choices<a class="anchor" aria-label="anchor" href="#implementation-choices"></a>
+</h3>
 <ul>
 <li>
-<strong>No <code>lpgd</code> derivative modes</strong>, no batch APIs, no <code>lsmr</code> mode, and no ECOS solver branch. The supported modes are <code>dense</code> and <code>lsqr</code>.</li>
-<li>
-<strong>Cone projections in R, Jacobians in C++.</strong> <code><a href="reference/pi.html">pi()</a></code> and the per-cone projections live in R (matching Python’s split between <code>cones.py</code> for projections and <code>cones.cpp</code> for Jacobians). All Jacobian, M, and LSQR machinery is in C++ via RcppEigen.</li>
+<strong>Cone projections in R, Jacobians in C++.</strong> <code><a href="reference/pi.html">pi()</a></code> and the per-cone projections live in R, mirroring Python’s <code>cones.py</code>. All Jacobian (<code>dprojection</code>, <code>M</code>, <code>LSQR</code>) machinery lives in C++.</li>
 <li>
 <strong>Eigen LDLT in dense mode.</strong> Identical to Python’s <code>(M^T M).ldlt().solve(M^T rhs)</code> (<code>cpp/src/deriv.cpp:53-57</code>).</li>
 </ul>
+</div>
+<div class="section level3">
+<h3 id="deferred-features">Deferred features<a class="anchor" aria-label="anchor" href="#deferred-features"></a>
+</h3>
+<p>For each, this section explains <em>what the feature is</em>, <em>who needs it</em>, and <em>what is lost</em> by deferring it.</p>
+<div class="section level4">
+<h4 id="lpgd--lpgd_left--lpgd_right-derivative-modes">
+<code>lpgd</code> / <code>lpgd_left</code> / <code>lpgd_right</code> derivative modes<a class="anchor" aria-label="anchor" href="#lpgd--lpgd_left--lpgd_right-derivative-modes"></a>
+</h4>
+<p><strong>What it is.</strong> Lagrangian Proximal Gradient Descent: a finite- difference replacement for the analytical adjoint. Instead of solving <code>M^T r = dz</code> via LSQR or LDLT, <code>lpgd</code> perturbs the problem by <code>tau</code>, re-solves, and forms the difference quotient. Both the forward and the adjoint derivatives are implemented this way.</p>
+<p><strong>Who needs it.</strong> Two niches: (1) <strong>QP derivatives</strong> — the only mode in upstream diffcp that handles a non-<code>NULL</code> quadratic-objective <code>P</code> through <code><a href="reference/solve_and_derivative.html">solve_and_derivative()</a></code>; (2) <strong>degenerate-derivative cases</strong> — problems where the analytical Jacobian is ill-defined (e.g., active- set transitions) and the smoothed <code>lpgd</code> answer is preferable.</p>
+<p><strong>What is lost without it.</strong> Through the diffcp R interface alone, <code>solve_and_derivative(P = P)</code> errors and points the user to <code>lpgd</code>. However, <strong>the loss disappears at the CVXR layer</strong>: CVXR canonicalises QPs into auxiliary-variable conic problems via <code>cone_matrix_stuffing</code> before they reach the solver, so a user calling <code>psolve(prob, requires_grad = TRUE)</code> on a quadratic problem gets correct gradients via the standard <code>dense</code> / <code>lsqr</code> path. <code>lpgd</code> is only needed if you call diffcp directly with <code>P != NULL</code> and want gradients.</p>
+</div>
+<div class="section level4">
+<h4 id="batch-apis-solve_and_derivative_batch-solve_only_batch">Batch APIs (<code>solve_and_derivative_batch</code>, <code>solve_only_batch</code>)<a class="anchor" aria-label="anchor" href="#batch-apis-solve_and_derivative_batch-solve_only_batch"></a>
+</h4>
+<p><strong>What it is.</strong> Thin wrappers in upstream that take <em>lists</em> of <code>(A, b, c, cone_dict)</code> and solve them in parallel via a <code>ThreadPool</code>. Each problem solves independently — there is no batch numerical kernel, just a process-pool scheduler. Returns batch-applied <code>D_batch</code> / <code>DT_batch</code> callables for forward / adjoint derivatives across the list.</p>
+<p><strong>Who needs it.</strong> <code>cvxpylayers</code> and similar PyTorch-side libraries that train neural networks with a CVXPY problem as a layer: each training example produces one cone program, and gradient descent needs every solve and every adjoint to run in parallel across a mini-batch.</p>
+<p><strong>What is lost without it.</strong> Nothing for single-problem use. R users who want batch parallelism today can wrap <code><a href="reference/solve_and_derivative.html">solve_and_derivative()</a></code> in <code><a href="https://rdrr.io/r/parallel/mclapply.html" class="external-link">parallel::mclapply()</a></code> themselves; the only thing missing is a canonical <code>solve_and_derivative_batch()</code> entry point matching the Python signature.</p>
+</div>
+<div class="section level4">
+<h4 id="lsmr-mode">
+<code>lsmr</code> mode<a class="anchor" aria-label="anchor" href="#lsmr-mode"></a>
+</h4>
+<p><strong>What it is.</strong> An iterative least-squares solver, mathematically similar to LSQR but with different stability properties on ill-conditioned systems. Upstream offers it as a third choice alongside <code>dense</code> and <code>lsqr</code>.</p>
+<p><strong>Who needs it.</strong> Niche. In practice <code>lsmr</code> and <code>lsqr</code> give indistinguishable results on the M-operator system that diffcp solves; the user-facing mode choice is between the dense LDLT path (small N) and any iterative path (large N).</p>
+<p><strong>What is lost without it.</strong> Nothing of substance. The R port supports <code>mode = "lsqr"</code> (matrix-free CG-style iterative solve) and <code>mode = "dense"</code> (Eigen LDLT). Adding <code>lsmr</code> would be a roughly 200- line port from SciPy plus tests, with no problem class on which it would be a strictly better answer.</p>
+</div>
+<div class="section level4">
+<h4 id="ecos-solver-branch">ECOS solver branch<a class="anchor" aria-label="anchor" href="#ecos-solver-branch"></a>
+</h4>
+<p><strong>What it is.</strong> ECOS (Embedded Conic Solver) is an interior-point method for LP / SOCP / ECP. Upstream <code>diffcp_conif.py</code> has a <code>solve_method = "ECOS"</code> branch (~90 lines) that calls Python <code>ecos</code> as the <em>forward</em> solver instead of SCS or Clarabel. The branch reformats SCS-style <code>(A, b, c)</code> into ECOS-style separated <code>(G, h, A_eq, b_eq)</code> matrices, permutes exponential-cone rows to match ECOS’s convention, and remaps the solution back to SCS form so the standard <code>M</code> operator and <code>dprojection</code> (which assume SCS ordering) can run on the result.</p>
+<p><strong>Who needs it.</strong> Effectively no one in 2026. Three reasons: 1. <strong>It is purely a forward-solver alternative</strong> — no new derivative capability, no new cone support (ECOS does not solve PSD), no QP. Anything ECOS solves, Clarabel solves with equal or better convergence. 2. <strong>Upstream is unmaintained.</strong> <code>embotech/ecos</code> has not seen a release since 2019; the Python <code>ecos</code> package is in maintenance mode. Clarabel (also Stanford-group) is the explicit successor. 3. <strong>No problems where it is the right answer.</strong> Clarabel and SCS together cover every problem the ECOS branch can handle.</p>
+<p><strong>What is lost without it.</strong> Reproducibility of pre-2020 scripts that hard-code <code>solve_method = "ECOS"</code>. That’s the entire surface area.</p>
+</div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
