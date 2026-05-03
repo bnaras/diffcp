@@ -1,0 +1,17 @@
+# Compiled C++
+src/*.o
+src/*.so
+src/*.dylib
+
+# R-generated artefacts
+*.Rcheck/
+*.tar.gz
+
+# RStudio / editor
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# OS
+.DS_Store

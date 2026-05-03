@@ -1,0 +1,38 @@
+Package: diffcp
+Type: Package
+Title: Differentiating Through Cone Programs
+Version: 0.0.0.9000
+Authors@R: c(
+    person("Balasubramanian", "Narasimhan",
+           role = c("aut", "cre"),
+           email = "naras@stanford.edu"),
+    person("Steven", "Diamond", role = "aut"),
+    person("Parth", "Nobel", role = "aut"),
+    person("William", "Zheng", role = "aut"),
+    person("Anqi", "Fu", role = "aut"),
+    person("Stephen", "Boyd", role = "aut"))
+Description: A pure-R port of the Python 'diffcp' package. Computes the
+    derivative of the optimal solution map of a convex cone program,
+    treating the program as an implicit function of its data
+    (constraint matrix, offset, objective coefficients, and optionally
+    a quadratic). Mirrors Agrawal, Barratt, and Boyd (2019)
+    <doi:10.48550/arXiv.1904.09043>; intended as the upstream of
+    differentiable-optimisation features in 'CVXR'.
+URL: https://github.com/bnaras/diffcp
+BugReports: https://github.com/bnaras/diffcp/issues
+License: Apache License (>= 2)
+Encoding: UTF-8
+LazyData: true
+Imports:
+    Matrix
+LinkingTo:
+    Rcpp,
+    RcppEigen
+Suggests:
+    testthat (>= 3.0.0),
+    clarabel,
+    scs
+SystemRequirements: C++17
+Config/testthat/edition: 3
+RoxygenNote: 7.3.2
+Roxygen: list(markdown = TRUE)
