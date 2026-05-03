@@ -217,14 +217,11 @@ solve_only <- function(A, b, c, cone_dict,
 solve_and_derivative <- function(A, b, c, cone_dict,
                                  P = NULL,
                                  solve_method = "Clarabel",
-                                 mode = "dense",
+                                 mode = "lsqr",
                                  warm_start = NULL,
                                  ...) {
   if (!mode %in% c("dense", "lsqr")) {
-    cli::cli_abort(c(
-      "Unsupported {.arg mode} = {.val {mode}}.",
-      "i" = "Supported modes in this development version: 'dense' (functional), 'lsqr' (errors)."
-    ))
+    cli::cli_abort("Unsupported {.arg mode} = {.val {mode}}; supported: 'dense', 'lsqr'.")
   }
   if (!is.null(P)) {
     cli::cli_abort("QP objective {.arg P} not yet supported (Phase 2-QP).")

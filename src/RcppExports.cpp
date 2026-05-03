@@ -11,21 +11,119 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// diffcp_dot
-double diffcp_dot(Eigen::Map<Eigen::VectorXd> x, Eigen::Map<Eigen::VectorXd> y);
-RcppExport SEXP _diffcp_diffcp_dot(SEXP xSEXP, SEXP ySEXP) {
+// cpp_dprojection_dense
+Eigen::MatrixXd cpp_dprojection_dense(const Eigen::VectorXd& x, const List& cones_R, bool dual);
+RcppExport SEXP _diffcp_cpp_dprojection_dense(SEXP xSEXP, SEXP cones_RSEXP, SEXP dualSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Eigen::Map<Eigen::VectorXd> >::type x(xSEXP);
-    Rcpp::traits::input_parameter< Eigen::Map<Eigen::VectorXd> >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(diffcp_dot(x, y));
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const List& >::type cones_R(cones_RSEXP);
+    Rcpp::traits::input_parameter< bool >::type dual(dualSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_dprojection_dense(x, cones_R, dual));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_M_dense
+Eigen::MatrixXd cpp_M_dense(const Eigen::MatrixXd& Q_dense, const List& cones_R, const Eigen::VectorXd& u, const Eigen::VectorXd& v, double w);
+RcppExport SEXP _diffcp_cpp_M_dense(SEXP Q_denseSEXP, SEXP cones_RSEXP, SEXP uSEXP, SEXP vSEXP, SEXP wSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type Q_dense(Q_denseSEXP);
+    Rcpp::traits::input_parameter< const List& >::type cones_R(cones_RSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type u(uSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type v(vSEXP);
+    Rcpp::traits::input_parameter< double >::type w(wSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_M_dense(Q_dense, cones_R, u, v, w));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_solve_derivative_dense
+Eigen::VectorXd cpp_solve_derivative_dense(const Eigen::MatrixXd& M, const Eigen::MatrixXd& MT, const Eigen::VectorXd& rhs);
+RcppExport SEXP _diffcp_cpp_solve_derivative_dense(SEXP MSEXP, SEXP MTSEXP, SEXP rhsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type M(MSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type MT(MTSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type rhs(rhsSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_solve_derivative_dense(M, MT, rhs));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_solve_adjoint_derivative_dense
+Eigen::VectorXd cpp_solve_adjoint_derivative_dense(const Eigen::MatrixXd& M, const Eigen::MatrixXd& MT, const Eigen::VectorXd& dz);
+RcppExport SEXP _diffcp_cpp_solve_adjoint_derivative_dense(SEXP MSEXP, SEXP MTSEXP, SEXP dzSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type M(MSEXP);
+    Rcpp::traits::input_parameter< const Eigen::MatrixXd& >::type MT(MTSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type dz(dzSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_solve_adjoint_derivative_dense(M, MT, dz));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_lsqr_M
+Rcpp::List cpp_lsqr_M(const Eigen::Map<Eigen::SparseMatrix<double>>& Q, const List& cones_R, const Eigen::VectorXd& u, const Eigen::VectorXd& v, double w, const Eigen::VectorXd& rhs, bool transpose, double damp, double atol, double btol, double conlim, int iter_lim);
+RcppExport SEXP _diffcp_cpp_lsqr_M(SEXP QSEXP, SEXP cones_RSEXP, SEXP uSEXP, SEXP vSEXP, SEXP wSEXP, SEXP rhsSEXP, SEXP transposeSEXP, SEXP dampSEXP, SEXP atolSEXP, SEXP btolSEXP, SEXP conlimSEXP, SEXP iter_limSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::Map<Eigen::SparseMatrix<double>>& >::type Q(QSEXP);
+    Rcpp::traits::input_parameter< const List& >::type cones_R(cones_RSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type u(uSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type v(vSEXP);
+    Rcpp::traits::input_parameter< double >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type rhs(rhsSEXP);
+    Rcpp::traits::input_parameter< bool >::type transpose(transposeSEXP);
+    Rcpp::traits::input_parameter< double >::type damp(dampSEXP);
+    Rcpp::traits::input_parameter< double >::type atol(atolSEXP);
+    Rcpp::traits::input_parameter< double >::type btol(btolSEXP);
+    Rcpp::traits::input_parameter< double >::type conlim(conlimSEXP);
+    Rcpp::traits::input_parameter< int >::type iter_lim(iter_limSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_lsqr_M(Q, cones_R, u, v, w, rhs, transpose, damp, atol, btol, conlim, iter_lim));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_lsqr_sparse
+Rcpp::List cpp_lsqr_sparse(const Eigen::Map<Eigen::SparseMatrix<double>>& A, const Eigen::VectorXd& b, double damp, double atol, double btol, double conlim, int iter_lim);
+RcppExport SEXP _diffcp_cpp_lsqr_sparse(SEXP ASEXP, SEXP bSEXP, SEXP dampSEXP, SEXP atolSEXP, SEXP btolSEXP, SEXP conlimSEXP, SEXP iter_limSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::Map<Eigen::SparseMatrix<double>>& >::type A(ASEXP);
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type b(bSEXP);
+    Rcpp::traits::input_parameter< double >::type damp(dampSEXP);
+    Rcpp::traits::input_parameter< double >::type atol(atolSEXP);
+    Rcpp::traits::input_parameter< double >::type btol(btolSEXP);
+    Rcpp::traits::input_parameter< double >::type conlim(conlimSEXP);
+    Rcpp::traits::input_parameter< int >::type iter_lim(iter_limSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_lsqr_sparse(A, b, damp, atol, btol, conlim, iter_lim));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_project_exp_cone
+Eigen::VectorXd cpp_project_exp_cone(const Eigen::VectorXd& x);
+RcppExport SEXP _diffcp_cpp_project_exp_cone(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_project_exp_cone(x));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_diffcp_diffcp_dot", (DL_FUNC) &_diffcp_diffcp_dot, 2},
+    {"_diffcp_cpp_dprojection_dense", (DL_FUNC) &_diffcp_cpp_dprojection_dense, 3},
+    {"_diffcp_cpp_M_dense", (DL_FUNC) &_diffcp_cpp_M_dense, 5},
+    {"_diffcp_cpp_solve_derivative_dense", (DL_FUNC) &_diffcp_cpp_solve_derivative_dense, 3},
+    {"_diffcp_cpp_solve_adjoint_derivative_dense", (DL_FUNC) &_diffcp_cpp_solve_adjoint_derivative_dense, 3},
+    {"_diffcp_cpp_lsqr_M", (DL_FUNC) &_diffcp_cpp_lsqr_M, 12},
+    {"_diffcp_cpp_lsqr_sparse", (DL_FUNC) &_diffcp_cpp_lsqr_sparse, 7},
+    {"_diffcp_cpp_project_exp_cone", (DL_FUNC) &_diffcp_cpp_project_exp_cone, 1},
     {NULL, NULL, 0}
 };
 

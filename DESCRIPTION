@@ -27,7 +27,8 @@ Imports:
     cli,
     clarabel,
     Matrix,
-    methods
+    methods,
+    Rcpp
 LinkingTo:
     Rcpp,
     RcppEigen

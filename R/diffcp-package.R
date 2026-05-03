@@ -13,6 +13,7 @@
 #' @aliases diffcp
 #' @keywords internal
 #' @import Matrix
+#' @importFrom Rcpp evalCpp
 #' @useDynLib diffcp, .registration = TRUE
 "_PACKAGE"
 

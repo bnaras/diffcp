@@ -20,7 +20,11 @@ parse_cone_dict <- function(cone_dict) {
   out <- list()
   for (cone in CONES) {
     if (!is.null(cone_dict[[cone]])) {
-      out[[length(out) + 1L]] <- list(name = cone, size = cone_dict[[cone]])
+      ## C++ wrapper expects `sizes` to always be an integer vector,
+      ## even for scalar-dim cones (z, l, ep, ed). Match that schema
+      ## here so R and C++ paths consume the same structure.
+      sz <- as.integer(cone_dict[[cone]])
+      out[[length(out) + 1L]] <- list(name = cone, sizes = sz)
     }
   }
   out
@@ -101,7 +105,7 @@ pi <- function(x, cones, dual = FALSE) {
   offset <- 0L
   for (entry in cones) {
     cone <- entry$name
-    sz   <- entry$size
+    sz   <- entry$sizes
     if (length(sz) == 0L || sum(sz) == 0L) next
     if (cone == "q") {
       ## SOC: each entry is one cone of size `d`.

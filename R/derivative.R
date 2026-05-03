@@ -1,23 +1,15 @@
-## DIFFCP SOURCE: diffcp/cpp/src/deriv.cpp + diffcp/cone_program.py:632-902
+## DIFFCP SOURCE: diffcp/cone_program.py:632-902 (R-side orchestration
+## of `solve_and_derivative`).  All numerical heavy lifting (cone
+## projection Jacobians, M operator, dense LDLT solve, matrix-free
+## LSQR) is delegated to C++ via the wrappers in src/wrapper.cpp.
 ##
-## Dense derivative path for `solve_and_derivative(mode = "dense")`.
-##
-## Mathematical setup (Busseti, Moursi, Boyd 2019):
-##   z = (u, v, w) with u = x, v = y - s, w = 1.
-##   Q = [[ 0,    A^T, c ];
-##        [ -A,  0,    b ];
-##        [ -c^T, -b^T, 0 ]]
-##   pi(z) = (u, Pi_{K^*}(v), max(w, 0))   (skewed projection)
-##   D pi(z) is block-diagonal with blocks (I_n, dPi_{K^*}(v),
-##     1{w >= 0}); a (N x N) matrix where N = m + n + 1.
-##   M = (Q - I) D pi(z) + I
-##   The forward derivative solves M dz = dQ pi(z); the adjoint solves
-##   M^T r = dz.  The Python source uses normal equations
-##     (M^T M) dz = M^T rhs  (and (M M^T) r = M dz for the adjoint),
-##   which gracefully handles boundary cases where M is singular.
+## This file mirrors the Python source line-for-line, except that the
+## per-iteration linear-algebra routines (`dpi_dense`, `M_dense`,
+## `_solve_derivative_dense`, `_solve_adjoint_derivative_dense`,
+## `M_operator`, `lsqr`) are C++ functions reachable from R.
 
 # -- Skewed pi onto R^n x K^* x R_+ -------------------------------
-## DIFFCP SOURCE: diffcp/cone_program.py:85-92 (the *other* `pi`).
+## DIFFCP SOURCE: diffcp/cone_program.py:85-92 (`pi(z, cones)`).
 .skew_pi <- function(z, cones, n_x, n_y) {
   u <- z[seq_len(n_x)]
   v <- z[(n_x + 1L):(n_x + n_y)]
@@ -26,117 +18,46 @@
 }
 
 # -- Build the (N x N) Q block ------------------------------------
-## DIFFCP SOURCE: diffcp/cone_program.py:676-680 + 716-720 (used both
-## for Q at the optimal z and for dQ in the derivative closure).
+## DIFFCP SOURCE: diffcp/cone_program.py:676-680 (Q at z*) and
+## :716-720 (dQ inside derivative()). Returns a sparse dgCMatrix.
 .build_Q <- function(A, b, c) {
   m <- nrow(A); n <- ncol(A)
   N <- m + n + 1L
-  ## Q is dense for now; M_dense ultimately needs it dense anyway.
-  Q <- matrix(0, N, N)
-  AT <- as.matrix(Matrix::t(A))
-  Aden <- as.matrix(A)
-  Q[1L:n,                  (n + 1L):(n + m)]     <- AT
-  Q[1L:n,                  N]                    <- c
-  Q[(n + 1L):(n + m),      1L:n]                 <- -Aden
-  Q[(n + 1L):(n + m),      N]                    <- b
-  Q[N,                     1L:n]                 <- -c
-  Q[N,                     (n + 1L):(n + m)]     <- -b
-  Q
-}
+  ## Sparse-bmat equivalent: explicitly build (i, j, x) triplets.
+  AT <- methods::as(Matrix::t(A), "TsparseMatrix")
+  Acoo <- methods::as(A, "TsparseMatrix")
+  ## block (1:n, (n+1):(n+m)) = A^T  (rows of A^T are A's columns)
+  i_at <- AT@i + 1L
+  j_at <- AT@j + 1L + n
+  ## block ((n+1):(n+m), 1:n) = -A
+  i_a  <- Acoo@i + 1L + n
+  j_a  <- Acoo@j + 1L
+  ## column N: c stacked over b stacked over 0; row N: -c^T stacked
+  ## with -b^T stacked with 0 (mirroring deriv.cpp / cone_program.py).
+  i_col <- c(seq_len(n), seq.int(n + 1L, n + m))
+  j_col <- rep.int(N, n + m)
+  x_col <- c(c, b)
+  i_row <- rep.int(N, n + m)
+  j_row <- c(seq_len(n), seq.int(n + 1L, n + m))
+  x_row <- c(-c, -b)
 
-# -- D pi(z), dense ------------------------------------------------
-## DIFFCP SOURCE: diffcp/cpp/src/deriv.cpp::dpi_dense (lines 30-42).
-.dpi_dense <- function(u, v, w, cones) {
-  n <- length(u); m <- length(v)
-  N <- n + m + 1L
-  D <- matrix(0, N, N)
-  diag(D)[1L:n] <- 1
-  ## Materialise the dual-cone projection Jacobian as an explicit (m,m)
-  ## block by applying its matvec to each standard basis vector. For
-  ## the cones we currently support (Zero, Nonneg, SOC) this is cheap
-  ## and exact; PSD/EXP will need a denser path.
-  Dproj <- .dprojection(v, cones, dual = TRUE)
-  Mblock <- matrix(0, m, m)
-  for (j in seq_len(m)) {
-    e <- numeric(m); e[j] <- 1
-    Mblock[, j] <- Dproj$matvec(e)
-  }
-  D[(n + 1L):(n + m), (n + 1L):(n + m)] <- Mblock
-  D[N, N] <- if (w >= 0) 1 else 0
-  D
-}
-
-# -- M dense -------------------------------------------------------
-## DIFFCP SOURCE: diffcp/cpp/src/deriv.cpp::M_dense (lines 44-51).
-.M_dense <- function(Q_dense, cones, u, v, w) {
-  N <- length(u) + length(v) + 1L
-  eyeN <- diag(N)
-  (Q_dense - eyeN) %*% .dpi_dense(u, v, w, cones) + eyeN
-}
-
-# -- Normal-equation solves ---------------------------------------
-## DIFFCP SOURCE: diffcp/cpp/src/deriv.cpp::_solve_derivative_dense
-##                   (lines 53-57; M^T M dz = M^T rhs)
-##                + diffcp/cpp/src/deriv.cpp::_solve_adjoint_derivative_dense
-##                   (lines 59-63; M M^T r = M dz).
-##
-## The Python source caches no factorisation (see TODO in deriv.cpp).
-##
-## R-specific note: M is typically rank-deficient at active-set
-## boundaries (e.g. an LP at optimality with most slacks zero), and
-## both base R's `solve()` and `qr.solve()` fail in that case.
-## Eigen's `.ldlt().solve(MT * rhs)` succeeds because LDLT on a
-## positive-semidefinite matrix returns a particular solution rather
-## than erroring. The closest general-purpose R analogue is the
-## Moore-Penrose pseudoinverse via SVD (`.pinv_solve` below), which
-## both handles rank deficiency and gives the minimum-norm solution.
-.pinv_solve <- function(A, b, tol = NULL) {
-  s <- svd(A)
-  if (is.null(tol)) {
-    tol <- max(dim(A)) * .Machine$double.eps * max(s$d)
-  }
-  d_inv <- ifelse(s$d > tol, 1 / s$d, 0)
-  s$v %*% (d_inv * crossprod(s$u, b))
-}
-.solve_derivative_dense <- function(M, MT, rhs) {
-  .pinv_solve(M, rhs)
-}
-.solve_adjoint_derivative_dense <- function(M, MT, dz) {
-  .pinv_solve(MT, dz)
-}
-
-# -- Build dQ from (dA, db, dc) -----------------------------------
-## DIFFCP SOURCE: diffcp/cone_program.py:716-720 (inside derivative()).
-.build_dQ <- function(dA, db, dc) {
-  m <- nrow(dA); n <- ncol(dA)
-  N <- m + n + 1L
-  dQ <- matrix(0, N, N)
-  dAT <- as.matrix(Matrix::t(dA))
-  dAden <- as.matrix(dA)
-  dQ[1L:n,                  (n + 1L):(n + m)] <- dAT
-  dQ[1L:n,                  N]                <- dc
-  dQ[(n + 1L):(n + m),      1L:n]             <- -dAden
-  dQ[(n + 1L):(n + m),      N]                <- db
-  dQ[N,                     1L:n]             <- -dc
-  dQ[N,                     (n + 1L):(n + m)] <- -db
-  dQ
+  Matrix::sparseMatrix(
+    i = c(i_at, i_a, i_col, i_row),
+    j = c(j_at, j_a, j_col, j_row),
+    x = c(AT@x, -Acoo@x, x_col, x_row),
+    dims = c(N, N)
+  )
 }
 
 # -- Build the closures used by `solve_and_derivative` ------------
 ## DIFFCP SOURCE: diffcp/cone_program.py:696-774 (derivative +
 ## adjoint_derivative closures).
-##
-## NOTE on signatures: Python returns `dA` as a SciPy CSC sparse
-## matrix with the sparsity pattern of the original `A`. R's analogue
-## here is a `dgCMatrix` built from the same `(rows, cols)`.
 .make_derivative_closures <- function(A, b, c, x, y, s, cones, mode) {
   if (!mode %in% c("dense", "lsqr")) {
     cli::cli_abort("Unsupported mode {.val {mode}}; supported: 'dense', 'lsqr'.")
   }
   m <- nrow(A); n <- ncol(A); N <- m + n + 1L
 
-  ## Capture nonzero pattern of A *before* we drop zeros, matching
-  ## diffcp/cone_program.py:643-653 (NaN-trick to record true zeros).
   A_drop <- Matrix::drop0(A)
   A_csc  <- methods::as(A_drop, "CsparseMatrix")
   nz <- Matrix::summary(A_csc)
@@ -144,51 +65,55 @@
   cols <- nz$j  # 1-based
 
   z <- c(x, y - s, 1)
-  Q <- .build_Q(A_csc, b, c)
+  Q_sp <- .build_Q(A_csc, b, c)
   pi_z <- .skew_pi(z, cones, n_x = n, n_y = m)
 
-  ## D_proj_dual_cone: Jacobian of Pi_{K^*} at v = y - s.
-  Dproj_dual <- .dprojection(z[(n + 1L):(n + m)], cones, dual = TRUE)
+  ## D pi(v) for the dual cone, materialised once via the C++ side so
+  ## the same code path serves all cones (Zero/Nonneg/SOC today,
+  ## PSD/EXP when those land).
+  Dproj_dual <- cpp_dprojection_dense(z[(n + 1L):(n + m)], cones, dual = TRUE)
 
   if (mode == "dense") {
-    M  <- .M_dense(Q, cones, u = x, v = y - s, w = 1)
+    Q_dense <- as.matrix(Q_sp)
+    M  <- cpp_M_dense(Q_dense, cones, u = x, v = y - s, w = 1)
     MT <- t(M)
-  } else {
-    cli::cli_abort(c(
-      "Mode {.val lsqr} not yet implemented in this development version.",
-      "i" = "Use {.code mode = \"dense\"} for now; LSQR lands in a follow-on commit."
-    ))
   }
 
   derivative <- function(dA, db, dc) {
-    dA_csc <- methods::as(methods::as(dA, "CsparseMatrix"), "dMatrix")
-    dQ  <- .build_dQ(dA_csc, db, dc)
-    rhs <- as.numeric(dQ %*% pi_z)
-    if (isTRUE(all.equal(rhs, numeric(N), tolerance = 0)) ||
-        all(abs(rhs) < .Machine$double.eps)) {
+    dA_csc <- methods::as(dA, "CsparseMatrix")
+    dQ_sp  <- .build_Q(dA_csc, db, dc)
+    rhs    <- as.numeric(dQ_sp %*% pi_z)
+    if (all(abs(rhs) < .Machine$double.eps)) {
       dz <- numeric(N)
+    } else if (mode == "dense") {
+      dz <- as.numeric(cpp_solve_derivative_dense(M, MT, rhs))
     } else {
-      dz <- as.numeric(.solve_derivative_dense(M, MT, rhs))
+      Q_map <- methods::as(Q_sp, "CsparseMatrix")
+      out <- cpp_lsqr_M(Q_map, cones, x, y - s, 1, rhs, transpose = FALSE)
+      dz <- as.numeric(out$solution)
     }
     du <- dz[1L:n]
     dv <- dz[(n + 1L):(n + m)]
     dw <- dz[N]
+    Ddv <- as.numeric(Dproj_dual %*% dv)
     dx <- du - x * dw
-    dy <- Dproj_dual$matvec(dv) - y * dw
-    ds <- Dproj_dual$matvec(dv) - dv - s * dw
+    dy <- Ddv - y * dw
+    ds <- Ddv - dv - s * dw
     list(dx = -dx, dy = -dy, ds = -ds)
   }
 
   adjoint_derivative <- function(dx, dy, ds) {
     dw <- -(sum(x * dx) + sum(y * dy) + sum(s * ds))
-    dz <- c(dx, Dproj_dual$rmatvec(dy + ds) - ds, dw)
+    dz <- c(dx, as.numeric(crossprod(Dproj_dual, dy + ds)) - ds, dw)
     if (all(abs(dz) < .Machine$double.eps)) {
       r <- numeric(N)
+    } else if (mode == "dense") {
+      r <- as.numeric(cpp_solve_adjoint_derivative_dense(M, MT, dz))
     } else {
-      r <- as.numeric(.solve_adjoint_derivative_dense(M, MT, dz))
+      Q_map <- methods::as(Q_sp, "CsparseMatrix")
+      out <- cpp_lsqr_M(Q_map, cones, x, y - s, 1, dz, transpose = TRUE)
+      r <- as.numeric(out$solution)
     }
-    ## Python uses 0-based (rows, cols); we use 1-based here so the
-    ## indices `rows + n` become `rows + n` directly in 1-based terms.
     values <- pi_z[cols] * r[rows + n] - pi_z[n + rows] * r[cols]
     dA <- Matrix::sparseMatrix(i = rows, j = cols, x = values,
                                dims = c(m, n))

@@ -119,7 +119,7 @@
   offset <- 0L
   for (entry in cones) {
     cone <- entry$name
-    sz   <- entry$size
+    sz   <- entry$sizes
     if (length(sz) == 0L || sum(sz) == 0L) next
     if (cone == "q") {
       for (d in sz) {

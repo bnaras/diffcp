@@ -11,7 +11,7 @@ solve_and_derivative(
   cone_dict,
   P = NULL,
   solve_method = "Clarabel",
-  mode = "dense",
+  mode = "lsqr",
   warm_start = NULL,
   ...
 )

@@ -26,14 +26,14 @@ test_that("solve_only matches Python diffcp on a small LP", {
 
   expect_equal(res$x,
                c(0.999999999979, 1.56223305592e-11, 5.32985362563e-12),
-               tolerance = 1e-7)
+               tolerance = 1e-10)
   expect_equal(res$y,
                c(-1.00000000003, 6.99807870964e-12,
                  1.00000000001, 2.00000000001),
-               tolerance = 1e-7)
+               tolerance = 1e-10)
   expect_equal(res$s,
                c(0, 0.99999999999, 2.64458841362e-11, 1.61534072027e-11),
-               tolerance = 1e-7)
+               tolerance = 1e-10)
 })
 
 # -- SOC: minimise t s.t. ||x||_2 <= t, sum(x)=1 -------------------
@@ -55,15 +55,15 @@ test_that("solve_only matches Python diffcp on a small SOC program", {
   expect_equal(res$x,
                c(0.577350269148, 0.333333333333,
                  0.333333333333, 0.333333333333),
-               tolerance = 1e-7)
+               tolerance = 1e-10)
   expect_equal(res$y,
                c(-0.577350269158, 1,
                  -0.577350269158, -0.577350269158, -0.577350269158),
-               tolerance = 1e-7)
+               tolerance = 1e-10)
   expect_equal(res$s,
                c(0, 0.577350269229,
                  0.333333333333, 0.333333333333, 0.333333333333),
-               tolerance = 1e-7)
+               tolerance = 1e-10)
 })
 
 # -- Least-1-norm with simplex constraints (m=4, n=2) --------------
@@ -96,14 +96,14 @@ test_that("solve_only matches Python diffcp on a least-1-norm fit", {
                c(0.394160332091, 0.605839667909,
                  1.04096942035, 1.33280317826,
                  2.71078680966e-10, 1.1714845415),
-               tolerance = 1e-6)
+               tolerance = 1e-9)
   expect_equal(res$y,
                c(-2.44898173259,
                  9.86831015808e-10, 5.27248031171e-11, 9.65403455408e-11,
                  1.00341548699e-10, 0.324294660638,
                  1.00000000015, 1.00000000006, 1.00000000003,
                  0.675705339506, 4.35026702385e-11),
-               tolerance = 1e-6)
+               tolerance = 1e-9)
   expect_equal(res$s,
                c(0,
                  0.394160332234, 0.60583966804,
@@ -111,7 +111,7 @@ test_that("solve_only matches Python diffcp on a least-1-norm fit", {
                  7.75671769009e-10, 8.63971826889e-11,
                  6.73624518845e-11, 2.38683178674e-11,
                  3.01504984204e-10, 2.3429690833),
-               tolerance = 1e-6)
+               tolerance = 1e-9)
 })
 
 test_that("solve_only rejects warm_start for Clarabel", {
