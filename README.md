@@ -1,4 +1,4 @@
-# diffcp
+# diffcp <img src="man/figures/logo.png" align="right" height="139" alt="diffcp logo" />
 
 [![R-CMD-check](https://github.com/bnaras/diffcp/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/bnaras/diffcp/actions/workflows/R-CMD-check.yaml)
 

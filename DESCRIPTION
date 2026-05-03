@@ -34,6 +34,7 @@ LinkingTo:
     RcppEigen
 Suggests:
     knitr,
+    pkgdown,
     rmarkdown,
     scs,
     testthat (>= 3.0.0)

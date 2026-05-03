@@ -1,0 +1,74 @@
+url: https://bnaras.github.io/diffcp/
+
+template:
+  bootstrap: 5
+  bslib:
+    primary: "#312E81"          # indigo, matches the logo cone gradient
+    base_font: {google: "Inter"}
+    heading_font: {google: "Inter"}
+    code_font: {google: "JetBrains Mono"}
+
+home:
+  title: diffcp - Differentiating Through Cone Programs in R
+  description: >
+    R port of the Python diffcp package.  Solves a convex cone program
+    and returns its optimum together with abstract linear maps for the
+    forward derivative and adjoint of the solution map with respect to
+    the problem data (A, b, c).
+
+navbar:
+  structure:
+    left:  [intro, reference, news]
+    right: [github]
+  components:
+    intro:
+      text: Get started
+      href: articles/diffcp.html
+    reference:
+      text: Reference
+      href: reference/index.html
+    news:
+      text: Changelog
+      href: news/index.html
+    github:
+      icon: fa-github
+      href: https://github.com/bnaras/diffcp
+      aria-label: GitHub
+
+reference:
+- title: Solve a cone program
+  desc: >
+    Forward solve and the differentiable solve.  Both accept (A, b, c)
+    in SCS standard form and a `cone_dict` of cone sizes.
+  contents:
+  - solve_only
+  - solve_and_derivative
+
+- title: Cone projection
+  desc: >
+    Projection onto a Cartesian product of cones, plus the
+    SCS-convention vec / unvec helpers for symmetric matrices.
+  contents:
+  - pi
+  - vec_symm
+  - unvec_symm
+  - parse_cone_dict
+
+- title: Cone tag constants
+  contents:
+  - diffcp-cones
+
+- title: Package
+  contents:
+  - diffcp-package
+
+articles:
+- title: Get started
+  navbar: ~
+  contents:
+  - diffcp
+
+footer:
+  structure:
+    left:  developed_by
+    right: built_with

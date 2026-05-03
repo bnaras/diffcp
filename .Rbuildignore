@@ -1,0 +1,5 @@
+^_pkgdown\.yml$
+^docs$
+^\.github$
+^diffcp\.Rproj$
+^\.Rproj\.user$

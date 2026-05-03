@@ -1,0 +1,193 @@
+# Differentiating Through a Cone Program with diffcp
+
+`diffcp` solves a convex cone program
+
+``` math
+\begin{aligned}
+\text{minimise}   &\quad c^\top x \\
+\text{subject to} &\quad Ax + s = b, \quad s \in K
+\end{aligned}
+```
+
+and returns both the optimum $`(x, y, s)`$ (with $`y`$ the dual variable
+of the cone constraint) **and** an abstract linear map representing the
+derivative of $`(x, y, s)`$ with respect to the data $`(A, b, c)`$. The
+derivative is exposed as two callables:
+
+- `D(dA, db, dc)` — the forward derivative; returns `(dx, dy, ds)`.
+- `DT(dx, dy, ds)` — the adjoint; returns `(dA, db, dc)`.
+
+This vignette walks through three small examples that exercise the
+common cones and demonstrate both the forward solve and the derivative.
+
+``` r
+
+library(diffcp)
+library(Matrix)
+```
+
+## A linear program
+
+The simplest case: a 1-equality / non-negative orthant LP.
+
+``` math
+\min_{x \in \mathbb{R}^3} \; c^\top x
+\quad \text{s.t.} \quad
+\mathbf{1}^\top x = 1, \; x \ge 0.
+```
+
+In SCS-style standard form $`Ax + s = b`$, $`s \in K = \{0\} \times
+\mathbb{R}^3_+`$:
+
+``` r
+
+A <- sparseMatrix(i = c(1, 2, 1, 3, 1, 4),
+                  j = c(1, 1, 2, 2, 3, 3),
+                  x = c(1, -1, 1, -1, 1, -1),
+                  dims = c(4, 3))
+b <- c(1, 0, 0, 0)
+c <- c(1, 2, 3)
+cone_dict <- list(z = 1L, l = 3L)
+```
+
+Solve:
+
+``` r
+
+res <- solve_and_derivative(A, b, c, cone_dict, mode = "lsqr",
+                            tol_gap_abs = 1e-10,
+                            tol_gap_rel = 1e-10,
+                            tol_feas    = 1e-10)
+res$x
+#> [1] 1.000000e+00 1.562233e-11 5.329854e-12
+```
+
+As expected the optimum is at $`x = (1, 0, 0)`$ (the cheapest non-zero
+coordinate). Now apply the derivative at a small perturbation in $`c`$:
+
+``` r
+
+dA <- sparseMatrix(i = integer(0), j = integer(0), x = numeric(0),
+                   dims = c(4, 3))
+db <- numeric(4)
+dc <- c(0.001, 0, 0)
+d <- res$D(dA, db, dc)
+d$dx
+#> [1] -2.274114e-16 -6.059404e-16  4.396755e-15
+```
+
+This should agree with finite-differencing the perturbed solve:
+
+``` r
+
+res_pert <- solve_only(A, b, c + dc, cone_dict,
+                       tol_gap_abs = 1e-10,
+                       tol_gap_rel = 1e-10,
+                       tol_feas    = 1e-10)
+max(abs(d$dx - (res_pert$x - res$x)))
+#> [1] 1.453855e-14
+```
+
+## A second-order cone program
+
+Minimum-distance-to-the-simplex inside a Lorentz cone:
+
+``` math
+\min_{t, x} \; t \quad \text{s.t.} \quad \|x\|_2 \le t, \; \mathbf{1}^\top x = 1.
+```
+
+Variables: $`(t, x_1, x_2, x_3)`$. Standard form $`Ax + s = b`$ with one
+zero cone (the equality) and one SOC of size 4 (containing the
+$`(t, x)`$ block):
+
+``` r
+
+A <- sparseMatrix(
+  i = c(2, 1, 3, 1, 4, 1, 5),
+  j = c(1, 2, 2, 3, 3, 4, 4),
+  x = c(-1, 1, -1, 1, -1, 1, -1),
+  dims = c(5, 4))
+b <- c(1, 0, 0, 0, 0)
+c <- c(1, 0, 0, 0)
+cone_dict <- list(z = 1L, q = 4L)
+
+res <- solve_and_derivative(A, b, c, cone_dict, mode = "dense",
+                            tol_gap_abs = 1e-10,
+                            tol_gap_rel = 1e-10,
+                            tol_feas    = 1e-10)
+res$x
+#> [1] 0.5773503 0.3333333 0.3333333 0.3333333
+```
+
+The optimum has $`x = (1/3, 1/3, 1/3)`$ and $`t = \sqrt{3}/3 \approx
+0.577`$, achieving the SOC equality constraint $`\|x\|_2 = t`$.
+
+## A semidefinite program
+
+Minimum-eigenvalue of a 5×5 PSD matrix subject to unit trace. Since PSD
+vectorisation in SCS / `diffcp` follows lower-triangular column-major
+order with `sqrt(2)` scaling on the off-diagonals, we build the
+trace-coefficient row by hand:
+
+``` r
+
+DIM <- 5L
+n   <- DIM * (DIM + 1L) %/% 2L          # 15
+
+trace_row <- numeric(n)
+pos <- 1L
+for (col in seq_len(DIM)) {
+  trace_row[pos] <- 1.0
+  pos <- pos + (DIM - col + 1L)         # advance to next diagonal entry
+}
+
+A <- rbind(
+  Matrix(matrix(trace_row, nrow = 1L), sparse = TRUE),
+  -Diagonal(n))
+A <- as(A, "CsparseMatrix")
+b <- c(1.0, numeric(n))
+
+C <- matrix(0, DIM, DIM)
+C[1, 1] <- 1; C[DIM, DIM] <- -1
+c_vec <- vec_symm(C)
+
+cone_dict <- list(z = 1L, s = DIM)
+
+res <- solve_only(A, b, c_vec, cone_dict,
+                  tol_gap_abs = 1e-10,
+                  tol_gap_rel = 1e-10,
+                  tol_feas    = 1e-10)
+X <- unvec_symm(res$x, DIM)
+sum(diag(X))
+#> [1] 1
+range(eigen(X, symmetric = TRUE, only.values = TRUE)$values)
+#> [1] -2.080584e-12  1.000000e+00
+```
+
+The optimal $`X`$ has trace 1 and concentrates on the eigenvector of
+$`C`$ with the most-negative eigenvalue, so $`X \approx e_5 e_5^\top`$.
+
+## Choosing the derivative mode
+
+`solve_and_derivative` accepts two modes:
+
+- `mode = "lsqr"` (default): matrix-free conjugate-gradient style
+  iterative solve against the `M` operator. Memory-efficient and
+  appropriate for large sparse problems.
+- `mode = "dense"`: build `M` as a dense matrix and factor with Eigen’s
+  LDLT. Lower per-call cost when the problem is small or the derivative
+  is being applied many times to different perturbations.
+
+Both modes produce the same numeric answer to within solver tolerance;
+the dense path matches Python’s
+`(M^\top M).\text{ldlt}().\text{solve}(M^\top \cdot \text{rhs})` bit for
+bit, and the LSQR path agrees with the dense path to roughly `1e-6`
+(LSQR’s default `atol = btol = 1e-8`).
+
+## Citation
+
+If you use `diffcp` in academic work, please cite:
+
+> Agrawal, A.; Barratt, S.; Boyd, S.; Busseti, E.; Moursi, W.
+> “Differentiating through a cone program.” *Journal of Applied and
+> Numerical Optimization*, **1**(2), 107–115, 2019.
