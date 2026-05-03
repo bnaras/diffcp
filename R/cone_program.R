@@ -243,8 +243,12 @@
     }
 
     A_csc <- methods::as(A, "CsparseMatrix")
-    P_csc <- if (is.null(P)) NULL else methods::as(P, "CsparseMatrix")
-    sol <- scs::scs(A = A_csc, b = b, obj = c, P = P_csc,
+    ## R `scs` accepts P only as base `matrix` or
+    ## `slam::simple_triplet_matrix` (no Matrix-package CsparseMatrix
+    ## method).  Densify if sparse — fine in practice because P is
+    ## typically small.
+    P_in <- if (is.null(P)) NULL else as.matrix(P)
+    sol <- scs::scs(A = A_csc, b = b, obj = c, P = P_in,
                     cone = cone_dict, initial = initial, control = control)
 
     status <- sol$info$status
@@ -333,7 +337,14 @@ solve_and_derivative <- function(A, b, c, cone_dict,
     cli::cli_abort("Unsupported {.arg mode} = {.val {mode}}; supported: 'dense', 'lsqr'.")
   }
   if (!is.null(P)) {
-    cli::cli_abort("QP objective {.arg P} not yet supported (Phase 2-QP).")
+    ## Mirror Python diffcp/cone_program.py:637-639.  Python diffcp
+    ## supports QP only via lpgd modes (lpgd / lpgd_left / lpgd_right);
+    ## we have not ported lpgd, so the path errors with the same text.
+    cli::cli_abort(c(
+      "Dense, lsqr, and lsmr modes currently do not support quadratic objectives.",
+      "i" = "Consider switching to {.code mode = 'lpgd'} mode.",
+      "x" = "{.code mode = 'lpgd'} is not yet ported in this R version of diffcp."
+    ))
   }
   if (any(is.nan(A@x))) cli::cli_abort("Found a NaN in {.arg A}.")
   A <- Matrix::drop0(A)
