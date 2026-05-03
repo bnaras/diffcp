@@ -115,6 +115,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// cpp_in_exp
+bool cpp_in_exp(const Eigen::VectorXd& x);
+RcppExport SEXP _diffcp_cpp_in_exp(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_in_exp(x));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cpp_in_exp_dual
+bool cpp_in_exp_dual(const Eigen::VectorXd& x);
+RcppExport SEXP _diffcp_cpp_in_exp_dual(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Eigen::VectorXd& >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(cpp_in_exp_dual(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_diffcp_cpp_dprojection_dense", (DL_FUNC) &_diffcp_cpp_dprojection_dense, 3},
@@ -124,6 +146,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_diffcp_cpp_lsqr_M", (DL_FUNC) &_diffcp_cpp_lsqr_M, 12},
     {"_diffcp_cpp_lsqr_sparse", (DL_FUNC) &_diffcp_cpp_lsqr_sparse, 7},
     {"_diffcp_cpp_project_exp_cone", (DL_FUNC) &_diffcp_cpp_project_exp_cone, 1},
+    {"_diffcp_cpp_in_exp", (DL_FUNC) &_diffcp_cpp_in_exp, 1},
+    {"_diffcp_cpp_in_exp_dual", (DL_FUNC) &_diffcp_cpp_in_exp_dual, 1},
     {NULL, NULL, 0}
 };
 

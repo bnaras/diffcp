@@ -29,3 +29,11 @@ cpp_project_exp_cone <- function(x) {
     .Call(`_diffcp_cpp_project_exp_cone`, x)
 }
 
+cpp_in_exp <- function(x) {
+    .Call(`_diffcp_cpp_in_exp`, x)
+}
+
+cpp_in_exp_dual <- function(x) {
+    .Call(`_diffcp_cpp_in_exp_dual`, x)
+}
+

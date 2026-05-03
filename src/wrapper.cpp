@@ -168,3 +168,17 @@ Eigen::VectorXd cpp_project_exp_cone(const Eigen::VectorXd &x) {
   r << out[0], out[1], out[2];
   return r;
 }
+
+// [[Rcpp::export]]
+bool cpp_in_exp(const Eigen::VectorXd &x) {
+  if (x.size() != 3) Rcpp::stop("cpp_in_exp requires length-3 input");
+  Eigen::Vector3d xv(x[0], x[1], x[2]);
+  return in_exp(xv);
+}
+
+// [[Rcpp::export]]
+bool cpp_in_exp_dual(const Eigen::VectorXd &x) {
+  if (x.size() != 3) Rcpp::stop("cpp_in_exp_dual requires length-3 input");
+  Eigen::Vector3d xv(x[0], x[1], x[2]);
+  return in_exp_dual(xv);
+}
