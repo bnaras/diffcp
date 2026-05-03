@@ -1,16 +1,16 @@
 Package: diffcp
 Type: Package
 Title: Differentiating Through Cone Programs
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: c(
     person("Balasubramanian", "Narasimhan",
            role = c("aut", "cre"),
            email = "naras@stanford.edu"),
-    person("Steven", "Diamond", role = "aut"),
-    person("Parth", "Nobel", role = "aut"),
-    person("William", "Zheng", role = "aut"),
-    person("Anqi", "Fu", role = "aut"),
-    person("Stephen", "Boyd", role = "aut"))
+    person("Akshay", "Agrawal", role = "aut"),
+    person("Shane", "Barratt",  role = "aut"),
+    person("Stephen", "Boyd",   role = "aut"),
+    person("Enzo", "Busseti",   role = "aut"),
+    person("Walaa", "Moursi",   role = "aut"))
 Description: A pure-R port of the Python 'diffcp' package. Computes the
     derivative of the optimal solution map of a convex cone program,
     treating the program as an implicit function of its data
@@ -33,8 +33,11 @@ LinkingTo:
     Rcpp,
     RcppEigen
 Suggests:
+    knitr,
+    rmarkdown,
     scs,
     testthat (>= 3.0.0)
+VignetteBuilder: knitr
 SystemRequirements: C++17
 Config/testthat/edition: 3
 RoxygenNote: 7.3.3
