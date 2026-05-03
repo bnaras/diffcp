@@ -6,6 +6,75 @@
 ## commits; for now `solve_and_derivative` errors with a clear
 ## phase-pointer message, while `solve_only` is fully functional.
 
+# -- PSD permutation: SCS lower-triangular <-> Clarabel upper-triangular --
+##
+## DIFFCP SOURCE: diffcp/cone_program.py:14-82 (`permute_psd_rows`,
+## `inverse_permute_psd_solution`).
+##
+## SCS packs a vec(X) for an n x n PSD matrix as the lower triangle in
+## column-major order: (X11, X21, ..., Xn1, X22, X32, ..., Xnn).
+## Clarabel packs the upper triangle in column-major order:
+## (X11, X12, X22, X13, X23, X33, ...).  For symmetric X both encode
+## the same matrix, but the *positions* differ, so the rows of A and
+## entries of b corresponding to one PSD block must be permuted before
+## handing to Clarabel; y and s come back in Clarabel order and must
+## be permuted back to SCS order.
+##
+## We compute two permutations matching Python:
+##   post[k] = clarabel index for the entry whose SCS index is k
+##   pre[k]  = scs index for the entry whose clarabel index is k
+## (post and pre are inverses of each other).
+.psd_perms <- function(n) {
+  ## np.tril_indices(n): for r=0..n-1, for c=0..r yield (r, c)
+  ## np.triu_indices(n): for r=0..n-1, for c=r..n-1 yield (r, c)
+  tril <- do.call(rbind, lapply(0:(n - 1L),
+                                function(r) cbind(r, 0:r)))
+  triu <- do.call(rbind, lapply(0:(n - 1L),
+                                function(r) cbind(r, r:(n - 1L))))
+  ## ravel_multi_index((cols, rows), (n, n)) row-major:
+  ##   linear = cols * n + rows
+  tril_multi <- tril[, 2L] * n + tril[, 1L]
+  triu_multi <- triu[, 2L] * n + triu[, 1L]
+  ## np.argsort -> R order(); convert to 0-based offsets.
+  list(
+    post = order(tril_multi) - 1L,   # SCS k -> Clarabel position
+    pre  = order(triu_multi) - 1L    # Clarabel k -> SCS position
+  )
+}
+
+## Permute rows of a CsparseMatrix A and entries of b for ONE PSD
+## block of dimension `n` (n*(n+1)/2 vectorised entries) starting at
+## 1-based row index `row_offset`.
+.permute_psd_rows <- function(A, b, n, row_offset) {
+  perms <- .psd_perms(n)
+  n_rows <- length(perms$post)
+
+  At <- methods::as(A, "TsparseMatrix")
+  rows <- At@i + 1L                    # 1-based
+  cols <- At@j + 1L
+  vals <- At@x
+  in_block <- rows >= row_offset & rows < row_offset + n_rows
+  rows[in_block] <- row_offset + perms$post[rows[in_block] - row_offset + 1L]
+
+  new_A <- Matrix::sparseMatrix(i = rows, j = cols, x = vals, dims = dim(A))
+  new_b <- b
+  new_b[row_offset:(row_offset + n_rows - 1L)] <-
+    b[row_offset + perms$pre + 1L - 1L]   # 1-based
+  list(A = new_A, b = new_b)
+}
+
+## Inverse permutation applied to y and s after a Clarabel solve.
+.inverse_permute_psd_solution <- function(y, s, n, row_offset) {
+  perms <- .psd_perms(n)
+  n_rows <- length(perms$pre)
+  idx <- row_offset + perms$pre   # 1-based source positions
+  new_y <- y
+  new_s <- s
+  new_y[row_offset:(row_offset + n_rows - 1L)] <- y[idx]
+  new_s[row_offset:(row_offset + n_rows - 1L)] <- s[idx]
+  list(y = new_y, s = new_s)
+}
+
 # -- Internal: dispatch the forward solve to a concrete solver ----
 ## DIFFCP SOURCE: diffcp/cone_program.py:397-630 (solve_internal).
 ##
@@ -39,16 +108,13 @@
     if (!is.null(warm_start)) {
       cli::cli_abort("Clarabel does not support warm starting.")
     }
-    if (any(cone_dict[["s"]] %||% integer(0) > 0L)) {
-      cli::cli_abort(c(
-        "PSD cones not yet supported via Clarabel in {.pkg diffcp}.",
-        "i" = "Clarabel uses upper-triangular ordering; permutation arrives in Phase 2b."
-      ))
-    }
 
     ## Clarabel uses the same SCS-style cones list. Translate `f`->`z`
     ## (free cone alias) and drop `ed` (Clarabel does not implement
-    ## dual exponential cones natively).
+    ## dual exponential cones natively).  PSD cones need an additional
+    ## row permutation on A and b, applied below per cone in cone-order
+    ## start_row = z + f + l + sum(q); then for each PSD of size v,
+    ## permute and advance by v*(v+1)/2.
     cones_arg <- list()
     if (!is.null(cone_dict[["z"]]) && cone_dict[["z"]] > 0L)
       cones_arg$z <- as.integer(cone_dict[["z"]])
@@ -59,8 +125,25 @@
       cones_arg$l <- as.integer(cone_dict[["l"]])
     if (!is.null(cone_dict[["q"]]) && length(cone_dict[["q"]]) > 0L)
       cones_arg$q <- as.integer(cone_dict[["q"]])
+    if (!is.null(cone_dict[["s"]]) && length(cone_dict[["s"]]) > 0L)
+      cones_arg$s <- as.integer(cone_dict[["s"]])
     if (!is.null(cone_dict[["ep"]]) && cone_dict[["ep"]] > 0L)
       cones_arg$ep <- as.integer(cone_dict[["ep"]])
+
+    ## Apply PSD row permutations to A, b in SCS->Clarabel direction.
+    if (!is.null(cone_dict[["s"]]) && length(cone_dict[["s"]]) > 0L) {
+      start_row <- 1L  # 1-based
+      if (!is.null(cone_dict[["z"]])) start_row <- start_row + as.integer(cone_dict[["z"]])
+      if (!is.null(cone_dict[["f"]])) start_row <- start_row + as.integer(cone_dict[["f"]])
+      if (!is.null(cone_dict[["l"]])) start_row <- start_row + as.integer(cone_dict[["l"]])
+      if (!is.null(cone_dict[["q"]])) start_row <- start_row + sum(as.integer(cone_dict[["q"]]))
+      for (v in as.integer(cone_dict[["s"]])) {
+        permuted <- .permute_psd_rows(A, b, v, start_row)
+        A <- permuted$A
+        b <- permuted$b
+        start_row <- start_row + (v * (v + 1L)) %/% 2L
+      }
+    }
 
     if (is.null(P)) {
       n <- length(c)
@@ -99,10 +182,29 @@
       }
     }
 
+    y_out <- as.numeric(sol$z)
+    s_out <- as.numeric(sol$s)
+
+    ## Permute y and s back from Clarabel (upper-triangular) to SCS
+    ## (lower-triangular) for each PSD cone block.
+    if (!is.null(cone_dict[["s"]]) && length(cone_dict[["s"]]) > 0L) {
+      start_row <- 1L
+      if (!is.null(cone_dict[["z"]])) start_row <- start_row + as.integer(cone_dict[["z"]])
+      if (!is.null(cone_dict[["f"]])) start_row <- start_row + as.integer(cone_dict[["f"]])
+      if (!is.null(cone_dict[["l"]])) start_row <- start_row + as.integer(cone_dict[["l"]])
+      if (!is.null(cone_dict[["q"]])) start_row <- start_row + sum(as.integer(cone_dict[["q"]]))
+      for (v in as.integer(cone_dict[["s"]])) {
+        permuted <- .inverse_permute_psd_solution(y_out, s_out, v, start_row)
+        y_out <- permuted$y
+        s_out <- permuted$s
+        start_row <- start_row + (v * (v + 1L)) %/% 2L
+      }
+    }
+
     return(list(
       x = as.numeric(sol$x),
-      y = as.numeric(sol$z),
-      s = as.numeric(sol$s),
+      y = y_out,
+      s = s_out,
       info = list(
         status    = scs_status,
         solveTime = sol$solve_time %||% NA_real_,

@@ -76,6 +76,20 @@ parse_cone_dict <- function(cone_dict) {
   out
 }
 
+# -- Projection onto the PSD cone ---------------------------------
+## DIFFCP SOURCE: diffcp/cones.py:99-102 (PSD branch of `_proj`).
+##
+## PSD is self-dual, so the `dual` argument is ignored.  `x` is the
+## SCS-style packed lower triangle (length n*(n+1)/2 with sqrt(2)
+## scaling on off-diagonals).  We unpack to a symmetric matrix,
+## clip eigenvalues to [0, +Inf), and re-pack.
+.proj_psd <- function(x, dim) {
+  X <- unvec_symm(x, dim)
+  eig <- eigen(X, symmetric = TRUE)
+  X_proj <- eig$vectors %*% (pmax(eig$values, 0) * t(eig$vectors))
+  vec_symm(X_proj)
+}
+
 # -- Single-cone dispatch -----------------------------------------
 ## Internal helper used by `pi()` to project one block.
 .proj_one_block <- function(x, cone, dual = FALSE) {
@@ -116,7 +130,13 @@ pi <- function(x, cones, dual = FALSE) {
       }
     } else if (cone == "s") {
       ## PSD: each entry is the matrix dimension; vector size is dim*(dim+1)/2.
-      cli::cli_abort("PSD cone not yet implemented (Phase 2b).")
+      for (d in sz) {
+        ## NOTE %/% has higher precedence than * in R; ALWAYS parenthesize.
+        sz_vec <- (d * (d + 1L)) %/% 2L
+        block_idx <- (offset + 1L):(offset + sz_vec)
+        out[block_idx] <- .proj_psd(x[block_idx], d)
+        offset <- offset + sz_vec
+      }
     } else if (cone == "ep" || cone == "ed") {
       ## Exponential cones: each entry is the *number* of cones; vector
       ## size is 3 * count.
