@@ -31,7 +31,7 @@
       .labelPurple{font-family: Georgia, 'Times New Roman', serif; fill:#6733a4; font-size:34px;}
       .sans{font-family: Avenir, Montserrat, Helvetica, Arial, sans-serif;}
     </style>
-  </defs><polygon points="600,50 1076,325 1076,875 600,1150 124,875 124,325" fill="#ffffff" stroke="#bfc0c2" stroke-width="22" stroke-linejoin="round" filter="url(#softShadow)"></polygon><g transform="translate(0,4)">
+  </defs><polygon points="600,50 1076,325 1076,875 600,1150 124,875 124,325" fill="#ffffff" stroke="#5a5d62" stroke-width="22" stroke-linejoin="round" filter="url(#softShadow)"></polygon><g transform="translate(0,4)">
     <!-- base affine plane -->
     <path d="M250 650 L406 553 L928 542 L790 647 Z" fill="#eaf3ff" opacity="0.55" class="blue thin round"></path>
     <path d="M250 650 L790 647" fill="none" class="blue thin round" opacity="0.75"></path>

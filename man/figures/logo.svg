@@ -38,7 +38,7 @@
 
   <!-- Sticker body -->
   <polygon points="600,50 1076,325 1076,875 600,1150 124,875 124,325"
-           fill="#ffffff" stroke="#bfc0c2" stroke-width="22" stroke-linejoin="round" filter="url(#softShadow)"/>
+           fill="#ffffff" stroke="#5a5d62" stroke-width="22" stroke-linejoin="round" filter="url(#softShadow)"/>
 
   <!-- Convex program geometry group -->
   <g transform="translate(0,4)">

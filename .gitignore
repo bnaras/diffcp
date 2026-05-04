@@ -7,6 +7,9 @@ src/*.dylib
 *.Rcheck/
 *.tar.gz
 
+# pkgdown site (built by CI, not committed)
+docs/
+
 # RStudio / editor
 .Rproj.user/
 .Rhistory
