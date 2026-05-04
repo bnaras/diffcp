@@ -72,3 +72,17 @@ footer:
   structure:
     left:  developed_by
     right: built_with
+
+authors:
+  Balasubramanian Narasimhan:
+    href: https://naras.su.domains
+  Akshay Agrawal:
+    href: https://www.akshayagrawal.com/
+  Shane Barratt:
+    href: https://shanebarratt.com/
+  Stephen Boyd:
+    href: https://web.stanford.edu/~boyd/
+  Enzo Busseti:
+    href: https://enzobusseti.com/
+  Walaa Moursi:
+    href: https://sites.google.com/view/walaa-moursi/home
