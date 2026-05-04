@@ -54,12 +54,18 @@ if (requireNamespace("pkgdown", quietly = TRUE)) {
 ## Geometry:
 ##   - Hex polygon points "600,50 1076,325 1076,875 600,1150 124,875 124,325"
 ##     (pointy-top, 1200x1200 viewBox).
-##   - Polyhedral convex set is a hand-drawn 8-sided polygon; the
-##     interior dashed lines suggest the cone's facet structure.
-##   - Tangent affine plane is a tilted parallelogram cutting through
-##     the polyhedron near its base.
-##   - Solid navy "data" dot at the polyhedron base (570, 678);
-##     violet "perturbed" dot up the cone at (744, 407); dashed
-##     violet bezier between them is the (dx, dy, ds) returned by D.
-##   - "perturbed" label sits inside the upper-right quadrant; arrow
-##     uses dasharray "32 22" for two long dashes + arrowhead.
+##   - Convex set is a second-order (Lorentz) cone
+##     { (x,y,t) : sqrt(x^2 + y^2) <= t }: apex at (600, 720),
+##     elliptical rim centered at (600, 240) with rx=260, ry=64.
+##     The front rim arc is solid navy; the back rim arc is dashed
+##     pale-blue to suggest the hidden far side of the cone.
+##   - Affine plane is a tilted parallelogram (273,582)-(421,460)-
+##     (899,460)-(779,582) slicing through the cone.  Cone ∩ plane
+##     is drawn as the small ellipse cx=600, cy=520, rx=118, ry=22
+##     -- the intersection of two convex sets is convex.
+##   - Solid navy "data" dot at the optimum (600, 542) on the
+##     cone-plane intersection; violet "perturbed" dot up the cone
+##     at (700, 380); dashed violet bezier between them is the
+##     (dx, dy, ds) direction returned by `derivative()`.
+##   - "perturbed" label sits in the upper-right quadrant; the
+##     pointer uses dasharray "32 22" for two long dashes + arrowhead.
