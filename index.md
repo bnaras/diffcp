@@ -1,0 +1,241 @@
+# diffcp
+
+[![R-CMD-check](https://github.com/bnaras/diffcp/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/bnaras/diffcp/actions/workflows/R-CMD-check.yaml)
+
+`diffcp` is an R port of the Python
+[`diffcp`](https://github.com/cvxgrp/diffcp) package. It computes the
+derivative of the optimal solution of a convex cone program with respect
+to its problem data, treating the program as an implicit function. The
+derivative is exposed both as a forward operator `D(dA, db, dc)` and an
+adjoint `DT(dx, dy, ds)`, and can be evaluated in either a dense (Eigen
+LDLT) or matrix-free (LSQR) mode.
+
+The implementation is a faithful port of the C++ core (cones,
+LinearOperator, dprojection, M operator, LSQR) from
+[cvxgrp/diffcp](https://github.com/cvxgrp/diffcp), called from R via
+RcppEigen. The R-level API mirrors the Python source. Test fixtures are
+pinned to Python diffcp’s outputs so the two packages agree bit-for-bit
+on every supported cone type.
+
+## What it solves
+
+Given problem data `(A, b, c)` (and optionally a quadratic objective
+`P`), `diffcp` solves the primal–dual pair
+
+    minimise    c'x          minimise    b'y
+    subject to  Ax + s = b   subject to  A'y + c = 0
+                s in K                   y in K*
+
+where `K` is a Cartesian product of the standard cones (zero,
+non-negative orthant, second-order, positive semidefinite, exponential,
+exponential dual). It returns the optimal `(x, y, s)` together with two
+callables:
+
+- **`D(dA, db, dc)`** — applies the derivative of `(x, y, s)` with
+  respect to `(A, b, c)` at the perturbations `(dA, db, dc)`.
+- **`DT(dx, dy, ds)`** — applies the adjoint, returning the
+  perturbations `(dA, db, dc)` corresponding to a desired change
+  `(dx, dy, ds)` in the solution.
+
+## Installation
+
+``` r
+
+remotes::install_github("bnaras/diffcp")
+```
+
+`diffcp` requires a C++17 compiler and the R packages
+[`Rcpp`](https://CRAN.R-project.org/package=Rcpp),
+[`RcppEigen`](https://CRAN.R-project.org/package=RcppEigen),
+[`Matrix`](https://CRAN.R-project.org/package=Matrix), and
+[`clarabel`](https://CRAN.R-project.org/package=clarabel). The
+[`scs`](https://CRAN.R-project.org/package=scs) package is an optional
+alternative forward solver.
+
+## Quick example
+
+``` r
+
+library(diffcp)
+
+## Tiny LP: minimise c'x s.t. 1'x = 1, x >= 0  with n = 3
+A <- Matrix::sparseMatrix(
+  i = c(1, 2, 1, 3, 1, 4),
+  j = c(1, 1, 2, 2, 3, 3),
+  x = c(1, -1, 1, -1, 1, -1),
+  dims = c(4, 3))
+b <- c(1, 0, 0, 0)
+c <- c(1, 2, 3)
+cone_dict <- list(z = 1L, l = 3L)
+
+res <- solve_and_derivative(A, b, c, cone_dict, mode = "lsqr")
+res$x   # primal optimum
+res$y   # dual variable
+res$s   # slack
+
+## Apply the derivative at a perturbation in c.
+dA <- Matrix::sparseMatrix(i = integer(0), j = integer(0),
+                            x = numeric(0), dims = c(4, 3))
+db <- numeric(4)
+dc <- c(0.001, 0, 0)
+res$D(dA, db, dc)   # list(dx, dy, ds)
+
+## Apply the adjoint to dx = c (steepest descent of c'x in (A, b, c)).
+res$DT(c, numeric(4), numeric(4))   # list(dA, db, dc)
+```
+
+For larger examples — including PSD and exponential cones — see the
+package vignette
+([`vignette("diffcp", package = "diffcp")`](https://bnaras.github.io/diffcp/articles/diffcp.md)).
+
+## Cone support
+
+| Cone                  | Tag  | Forward solve      | Derivative |
+|-----------------------|------|--------------------|------------|
+| Zero (equality)       | `z`  | ✓                  | ✓          |
+| Non-negative orthant  | `l`  | ✓                  | ✓          |
+| Second-order cone     | `q`  | ✓                  | ✓          |
+| Positive semidefinite | `s`  | ✓ (Clarabel + SCS) | ✓          |
+| Exponential cone      | `ep` | ✓                  | ✓          |
+| Exponential dual cone | `ed` | ✓                  | ✓          |
+
+PSD vectorisation follows the SCS convention (lower-triangular
+column-major, with off-diagonals scaled by `sqrt(2)`). When solving PSD
+problems through Clarabel, `diffcp` automatically permutes the rows of
+`A` and the entries of `b` from SCS order to Clarabel’s upper-triangular
+order, then permutes the dual `y` and slack `s` back on return.
+
+Quadratic objectives (`P`) are supported in `solve_only(P = P)` for the
+forward solve via Clarabel or SCS native QP. The dense and LSQR modes of
+`solve_and_derivative` do not support quadratic objectives; the upstream
+Python package handles QP only via its `lpgd` modes, which this R port
+does not yet provide.
+
+## Differences from Python diffcp
+
+The R port is a direct line-for-line port of the C++ numerical core
+(`cpp/src/{linop,cones,deriv,lsqr}.cpp`) called via RcppEigen, plus an
+R-level orchestration layer mirroring `cone_program.py` and `cones.py`.
+Two implementation choices and four feature deferrals:
+
+### Implementation choices
+
+- **Cone projections in R, Jacobians in C++.**
+  [`pi()`](https://bnaras.github.io/diffcp/reference/pi.md) and the
+  per-cone projections live in R, mirroring Python’s `cones.py`. All
+  Jacobian (`dprojection`, `M`, `LSQR`) machinery lives in C++.
+- **Eigen LDLT in dense mode.** Identical to Python’s
+  `(M^T M).ldlt().solve(M^T rhs)` (`cpp/src/deriv.cpp:53-57`).
+
+### Deferred features
+
+For each, this section explains *what the feature is*, *who needs it*,
+and *what is lost* by deferring it.
+
+#### `lpgd` / `lpgd_left` / `lpgd_right` derivative modes
+
+**What it is.** Lagrangian Proximal Gradient Descent: a finite-
+difference replacement for the analytical adjoint. Instead of solving
+`M^T r = dz` via LSQR or LDLT, `lpgd` perturbs the problem by `tau`,
+re-solves, and forms the difference quotient. Both the forward and the
+adjoint derivatives are implemented this way.
+
+**Who needs it.** Two niches: (1) **QP derivatives** — the only mode in
+upstream diffcp that handles a non-`NULL` quadratic-objective `P`
+through
+[`solve_and_derivative()`](https://bnaras.github.io/diffcp/reference/solve_and_derivative.md);
+(2) **degenerate-derivative cases** — problems where the analytical
+Jacobian is ill-defined (e.g., active- set transitions) and the smoothed
+`lpgd` answer is preferable.
+
+**What is lost without it.** Through the diffcp R interface alone,
+`solve_and_derivative(P = P)` errors and points the user to `lpgd`.
+However, **the loss disappears at the CVXR layer**: CVXR canonicalises
+QPs into auxiliary-variable conic problems via `cone_matrix_stuffing`
+before they reach the solver, so a user calling
+`psolve(prob, requires_grad = TRUE)` on a quadratic problem gets correct
+gradients via the standard `dense` / `lsqr` path. `lpgd` is only needed
+if you call diffcp directly with `P != NULL` and want gradients.
+
+#### Batch APIs (`solve_and_derivative_batch`, `solve_only_batch`)
+
+**What it is.** Thin wrappers in upstream that take *lists* of
+`(A, b, c, cone_dict)` and solve them in parallel via a `ThreadPool`.
+Each problem solves independently — there is no batch numerical kernel,
+just a process-pool scheduler. Returns batch-applied `D_batch` /
+`DT_batch` callables for forward / adjoint derivatives across the list.
+
+**Who needs it.** `cvxpylayers` and similar PyTorch-side libraries that
+train neural networks with a CVXPY problem as a layer: each training
+example produces one cone program, and gradient descent needs every
+solve and every adjoint to run in parallel across a mini-batch.
+
+**What is lost without it.** Nothing for single-problem use. R users who
+want batch parallelism today can wrap
+[`solve_and_derivative()`](https://bnaras.github.io/diffcp/reference/solve_and_derivative.md)
+in [`parallel::mclapply()`](https://rdrr.io/r/parallel/mclapply.html)
+themselves; the only thing missing is a canonical
+`solve_and_derivative_batch()` entry point matching the Python
+signature.
+
+#### `lsmr` mode
+
+**What it is.** An iterative least-squares solver, mathematically
+similar to LSQR but with different stability properties on
+ill-conditioned systems. Upstream offers it as a third choice alongside
+`dense` and `lsqr`.
+
+**Who needs it.** Niche. In practice `lsmr` and `lsqr` give
+indistinguishable results on the M-operator system that diffcp solves;
+the user-facing mode choice is between the dense LDLT path (small N) and
+any iterative path (large N).
+
+**What is lost without it.** Nothing of substance. The R port supports
+`mode = "lsqr"` (matrix-free CG-style iterative solve) and
+`mode = "dense"` (Eigen LDLT). Adding `lsmr` would be a roughly 200-
+line port from SciPy plus tests, with no problem class on which it would
+be a strictly better answer.
+
+#### ECOS solver branch
+
+**What it is.** ECOS (Embedded Conic Solver) is an interior-point method
+for LP / SOCP / ECP. Upstream `diffcp_conif.py` has a
+`solve_method = "ECOS"` branch (~90 lines) that calls Python `ecos` as
+the *forward* solver instead of SCS or Clarabel. The branch reformats
+SCS-style `(A, b, c)` into ECOS-style separated `(G, h, A_eq, b_eq)`
+matrices, permutes exponential-cone rows to match ECOS’s convention, and
+remaps the solution back to SCS form so the standard `M` operator and
+`dprojection` (which assume SCS ordering) can run on the result.
+
+**Who needs it.** Effectively no one in 2026. Three reasons: 1. **It is
+purely a forward-solver alternative** — no new derivative capability, no
+new cone support (ECOS does not solve PSD), no QP. Anything ECOS solves,
+Clarabel solves with equal or better convergence. 2. **Upstream is
+unmaintained.** `embotech/ecos` has not seen a release since 2019; the
+Python `ecos` package is in maintenance mode. Clarabel (also
+Stanford-group) is the explicit successor. 3. **No problems where it is
+the right answer.** Clarabel and SCS together cover every problem the
+ECOS branch can handle.
+
+**What is lost without it.** Reproducibility of pre-2020 scripts that
+hard-code `solve_method = "ECOS"`. That’s the entire surface area.
+
+## Citation
+
+If you use `diffcp` in academic work, please cite the original paper:
+
+``` bibtex
+@article{diffcp2019,
+    author       = {Agrawal, A. and Barratt, S. and Boyd, S. and Busseti, E. and Moursi, W.},
+    title        = {Differentiating through a cone program},
+    journal      = {Journal of Applied and Numerical Optimization},
+    year         = {2019},
+    volume       = {1},
+    number       = {2},
+    pages        = {107--115},
+}
+```
+
+## License
+
+Apache License 2.0, matching the upstream Python `diffcp` license.

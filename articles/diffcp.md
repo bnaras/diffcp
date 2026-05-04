@@ -1,0 +1,470 @@
+# Differentiating Through a Cone Program with diffcp
+
+## What `diffcp` is for
+
+Suppose you have a convex optimisation problem whose data — the
+constraint matrix, the offset, the objective coefficients — depend on
+some upstream quantity (a parameter, a model weight, a hyperparameter,
+the output of a previous computation). You solve the problem and get an
+optimum. **How does that optimum change when the data changes?**
+
+`diffcp` answers that question. It treats the optimal solution as an
+*implicit function* of the problem data, and returns the derivative of
+that function — both in the forward direction (perturb the data, get the
+predicted change in the optimum) and as its adjoint (start from a
+downstream loss on the optimum and backpropagate to a gradient on the
+data).
+
+Three concrete things you can do with it:
+
+- **Sensitivity analysis.** Quantify how much each constraint or cost
+  coefficient matters at the optimum.
+- **Hyperparameter learning.** Solve a regularised problem inside a
+  training loop and let gradient descent on the upstream loss learn the
+  regulariser.
+- **End-to-end optimisation layers.** Embed a CVXR problem as a
+  differentiable component of a larger model — see CVXR’s
+  `Problem$backward()` and `Problem$derivative()` API, which internally
+  calls `diffcp`.
+
+The implementation is a port of the Python `diffcp` package (Agrawal,
+Barratt, Boyd, Busseti, Moursi, 2019); the numerical core (cone
+projections, Jacobians, the `M` operator, LSQR) is direct C++ from the
+upstream repository, called from R via RcppEigen.
+
+``` r
+
+library(diffcp)
+library(Matrix)
+```
+
+## The mathematical setup
+
+`diffcp` differentiates the *primal–dual conic problem*
+
+``` math
+\begin{aligned}
+\text{minimise}   &\quad c^\top x \\
+\text{subject to} &\quad A x + s = b, \quad s \in K,
+\end{aligned}
+```
+
+where $`K`$ is a Cartesian product of the standard cones (zero, the
+non-negative orthant, second-order, positive semidefinite, exponential,
+and the exponential dual). The dual variable attached to the cone
+constraint is $`y`$; together $`(x, y, s)`$ is the primal–dual triple.
+
+Differentiating “the optimum” turns out to mean something precise:
+
+1.  The KKT conditions can be lifted into a *homogeneous self-dual
+    embedding* (Ye–Todd–Mizuno) in which optimality, primal
+    infeasibility, and dual infeasibility all become statements about a
+    single residual map $`N(z) = ((Q - I) \Pi(z) + I) z`$, where $`Q`$
+    is a skew-symmetric block of the data and $`\Pi`$ is the projection
+    onto $`\mathbb{R}^n \times K^\ast \times
+    \mathbb{R}_+`$.
+2.  At a *regular point* — informally, an optimum away from active-set
+    transitions and degeneracies — the implicit-function theorem
+    applies, and the optimum is a smooth function of the problem data.
+3.  The Jacobian of the optimum with respect to the data is then a
+    bounded linear operator, computed by solving a linear system in
+    $`M = (Q - I)\,D\Pi(z) + I`$ using either a dense LDLT factorisation
+    or a matrix-free LSQR iteration.
+
+This is the construction in Busseti, Moursi, and Boyd (2019); `diffcp`
+packages it into two callables.
+
+## What the package computes
+
+Calling `solve_and_derivative(A, b, c, cone_dict)` returns a list with
+five entries:
+
+- `x`, `y`, `s` — the primal–dual optimum.
+- `D(dA, db, dc)` — the **forward derivative**. Given a perturbation of
+  the data, returns `(dx, dy, ds)`: the predicted change in the optimum,
+  to first order.
+- `DT(dx, dy, ds)` — the **adjoint** of `D`. Given a perturbation of the
+  optimum (or, more usefully, a gradient of a downstream loss with
+  respect to the optimum), returns `(dA, db, dc)`: the gradient of that
+  loss with respect to the data.
+
+Both are functions, not matrices. The dense mode materialises the
+Jacobian as an Eigen matrix and factors it once; the LSQR mode applies
+the Jacobian and its transpose matrix-free, never forming the dense
+object. The trade-off is per-call cost (`dense` is faster once `M` has
+been factored) versus memory and asymptotic scaling (`lsqr` is the only
+viable choice for very large problems).
+
+## Worked example 1: a linear program
+
+The smallest illustrative case: pick the cheapest non-negative mixture
+of three goods that sums to one,
+
+``` math
+\min_{x \in \mathbb{R}^3} \; c^\top x
+\quad \text{subject to} \quad
+\mathbf{1}^\top x = 1,\; x \ge 0.
+```
+
+In SCS standard form $`Ax + s = b`$, $`s \in K = \{0\} \times
+\mathbb{R}^3_+`$ — one row for the equality (zero cone, $`s = 0`$)
+followed by three rows for the non-negativity constraints (the slack
+absorbs the inequality):
+
+``` r
+
+A <- sparseMatrix(i = c(1, 2, 1, 3, 1, 4),
+                  j = c(1, 1, 2, 2, 3, 3),
+                  x = c(1, -1, 1, -1, 1, -1),
+                  dims = c(4, 3))
+b <- c(1, 0, 0, 0)
+c <- c(1, 2, 3)
+cone_dict <- list(z = 1L, l = 3L)
+
+res <- solve_and_derivative(A, b, c, cone_dict, mode = "lsqr",
+                            tol_gap_abs = 1e-10,
+                            tol_gap_rel = 1e-10,
+                            tol_feas    = 1e-10)
+res$x
+#> [1] 1.000000e+00 1.562233e-11 5.329854e-12
+```
+
+The optimum is $`x \approx (1, 0, 0)`$ — all weight on the cheapest
+coordinate. Now the derivative. Suppose we slightly increase the cost of
+the first coordinate, holding everything else fixed:
+
+``` r
+
+dA <- sparseMatrix(i = integer(0), j = integer(0), x = numeric(0),
+                   dims = c(4, 3))
+db <- numeric(4)
+dc <- c(0.001, 0, 0)
+d <- res$D(dA, db, dc)
+d$dx
+#> [1] -2.311790e-16 -6.104703e-16  4.390389e-15
+```
+
+`D` reports that `dx` is essentially zero — the optimum is robust to a
+small bump in $`c_1`$, because the constraint $`\mathbf{1}^\top
+x = 1`$ pins coordinate 1 against $`x \ge 0`$. (You’d see a non-trivial
+`dy` if you printed the dual perturbation.) The forward derivative
+agrees with finite-differencing the perturbed solve to within solver
+tolerance:
+
+``` r
+
+res_pert <- solve_only(A, b, c + dc, cone_dict,
+                       tol_gap_abs = 1e-10,
+                       tol_gap_rel = 1e-10,
+                       tol_feas    = 1e-10)
+max(abs(d$dx - (res_pert$x - res$x)))
+#> [1] 1.453479e-14
+```
+
+The agreement is at the level of the Clarabel solve tolerance, not the
+LSQR tolerance — the per-call derivative *is* the exact
+implicit-function-theorem answer at this point.
+
+## Worked example 2: a second-order-cone program
+
+A geometric example: project the simplex centroid onto a Lorentz cone,
+
+``` math
+\min_{t,\, x} \; t \quad \text{subject to} \quad \|x\|_2 \le t,\;
+\mathbf{1}^\top x = 1.
+```
+
+The variables are $`(t, x_1, x_2, x_3)`$. The block $`(t, x)`$ lives in
+a single 4-dimensional second-order cone; the equality goes in a zero
+cone of size 1. Since $`t`$ is being minimised against a norm
+constraint, the optimum lies on the cone boundary $`\|x\|_2 = t`$, which
+is exactly the kind of active constraint that makes derivatives
+non-trivial.
+
+``` r
+
+A <- sparseMatrix(
+  i = c(2, 1, 3, 1, 4, 1, 5),
+  j = c(1, 2, 2, 3, 3, 4, 4),
+  x = c(-1, 1, -1, 1, -1, 1, -1),
+  dims = c(5, 4))
+b <- c(1, 0, 0, 0, 0)
+c <- c(1, 0, 0, 0)
+cone_dict <- list(z = 1L, q = 4L)
+
+res <- solve_and_derivative(A, b, c, cone_dict, mode = "dense",
+                            tol_gap_abs = 1e-10,
+                            tol_gap_rel = 1e-10,
+                            tol_feas    = 1e-10)
+res$x
+#> [1] 0.5773503 0.3333333 0.3333333 0.3333333
+```
+
+The optimum is $`x = (1/3, 1/3, 1/3)`$, $`t = \sqrt{3}/3`$, and the SOC
+constraint $`\|x\|_2 = t`$ holds with equality. The cone projection’s
+Jacobian at a boundary point is the technical heart of `diffcp` — it’s a
+smoothed projector that interpolates between the identity (interior of
+the cone) and zero (interior of the polar cone). The package handles all
+the boundary geometry automatically; from the R side you just call `D`
+and `DT`.
+
+## Worked example 3: a small semidefinite program
+
+The minimum-eigenvalue SDP: find a unit-trace PSD matrix that minimises
+$`\langle C, X \rangle`$ for given $`C`$. With
+$`C = \mathrm{diag}(1, 0, 0, 0, -1)`$, the optimum is rank-one and puts
+all weight on the eigenvector of $`C`$ with most-negative eigenvalue.
+
+PSD support requires a vectorisation convention. `diffcp` uses the SCS
+convention: lower-triangular column-major, with off-diagonals scaled by
+$`\sqrt{2}`$. The package exports
+[`vec_symm()`](https://bnaras.github.io/diffcp/reference/vec_symm.md)
+and
+[`unvec_symm()`](https://bnaras.github.io/diffcp/reference/unvec_symm.md)
+for round-trips between symmetric matrices and their packed vector form.
+The trace-coefficient row in the equality constraint is sparse — only
+the diagonal entries contribute, and we build it explicitly:
+
+``` r
+
+DIM <- 5L
+n   <- DIM * (DIM + 1L) %/% 2L          # 15
+
+trace_row <- numeric(n)
+pos <- 1L
+for (col in seq_len(DIM)) {
+  trace_row[pos] <- 1.0
+  pos <- pos + (DIM - col + 1L)         # next diagonal in column-major lower-tri
+}
+
+A <- rbind(
+  Matrix(matrix(trace_row, nrow = 1L), sparse = TRUE),
+  -Diagonal(n))
+A <- as(A, "CsparseMatrix")
+b <- c(1.0, numeric(n))
+
+C <- matrix(0, DIM, DIM)
+C[1, 1] <- 1; C[DIM, DIM] <- -1
+c_vec <- vec_symm(C)
+
+cone_dict <- list(z = 1L, s = DIM)
+
+res <- solve_only(A, b, c_vec, cone_dict,
+                  tol_gap_abs = 1e-10,
+                  tol_gap_rel = 1e-10,
+                  tol_feas    = 1e-10)
+X <- unvec_symm(res$x, DIM)
+sum(diag(X))
+#> [1] 1
+range(eigen(X, symmetric = TRUE, only.values = TRUE)$values)
+#> [1] -2.080584e-12  1.000000e+00
+```
+
+`X` has trace 1 (to solver tolerance) and is PSD (smallest eigenvalue
+$`\ge -10^{-9}`$). Behind the scenes, when the solve goes through
+Clarabel — which packs PSD entries in upper-triangular column-major
+order, opposite to SCS — `diffcp` permutes the rows of $`A`$ and the
+entries of $`b`$ on the way in, and inverse-permutes the dual $`y`$ and
+slack $`s`$ on the way out, so the user-facing convention stays SCS
+throughout.
+
+## A practical sensitivity-analysis example
+
+Here is the canonical use case: **shadow prices**. Take a small LP — a
+profit-maximising production plan with a labour and a materials budget —
+and ask, *given the optimum, by how much would the profit change per
+extra unit of labour?* That number is the dual variable on the labour
+constraint. `diffcp` lets you compute the same sensitivity for *any*
+perturbation of the data, including ones that have no closed-form dual
+interpretation.
+
+We solve
+
+``` math
+\max_{x_1, x_2 \ge 0}\; 3 x_1 + 5 x_2
+\quad \text{s.t.}\quad
+2 x_1 + x_2 \le 100,\;
+x_1 + 3 x_2 \le 90,
+```
+
+and ask: how does the optimum respond to a small change in the
+labour-budget right-hand side, $`b_1 = 100`$?
+
+We rewrite the maximisation as a minimisation of $`-c^\top x`$, and
+encode the two budget inequalities and the two non-negativity
+inequalities as four rows of a non-negative orthant slack constraint:
+
+``` r
+
+A_lp <- sparseMatrix(i = c(1, 2, 3,  1, 2, 4),
+                     j = c(1, 1, 1,  2, 2, 2),
+                     x = c(2, 1, -1, 1, 3, -1),
+                     dims = c(4, 2))
+b_lp <- c(100, 90, 0, 0)
+c_lp <- c(-3, -5)
+cones_lp <- list(l = 4L)
+
+res <- solve_and_derivative(A_lp, b_lp, c_lp, cones_lp, mode = "dense",
+                            tol_gap_abs = 1e-10, tol_gap_rel = 1e-10,
+                            tol_feas    = 1e-10)
+res$x      # optimal production plan
+#> [1] 42 16
+-sum(c_lp * res$x)   # max profit
+#> [1] 206
+```
+
+The optimum makes $`x_1 = 42`$, $`x_2 = 16`$, profit $`= 206`$. Now use
+`D` to ask how the optimal $`x`$ would change if we got one extra unit
+of labour ($`\Delta b_1 = 1`$):
+
+``` r
+
+dA <- sparseMatrix(i = integer(0), j = integer(0), x = numeric(0),
+                   dims = c(4, 2))
+db <- c(1, 0, 0, 0)
+dc <- numeric(2)
+d  <- res$D(dA, db, dc)
+d$dx                       # change in optimal production
+#> [1]  0.6 -0.2
+-sum(c_lp * d$dx)          # change in profit
+#> [1] 0.8
+```
+
+`d$dx` says that an extra unit of labour increases $`x_1`$ by 0.6 and
+decreases $`x_2`$ by 0.2, and the corresponding profit change is $`0.8`$
+per unit of labour: the labour-budget shadow price, recovered from `D`
+rather than from the dual variable $`y`$.
+
+The advantage of going through `D` instead of the dual: it generalises.
+We can ask the same question about non-trivial perturbations of $`A`$ (a
+productivity gain on a particular input), `c` (a price change on a
+particular product), or any combination. The dual variable answers only
+the canonical RHS-perturbation question; `D` answers all of them through
+the same single call.
+
+`DT` answers the *opposite* question. Suppose we have a downstream loss
+$`L(x^\ast)`$ — say, a smooth function of the optimum with known
+gradient $`\partial L / \partial x^\ast`$. The adjoint computes the
+gradient of $`L`$ with respect to *every* data entry $`(A, b, c)`$ in
+one shot:
+
+``` r
+
+## Suppose dL/dx* is given (e.g. from autodiff in a larger model).
+dL_dx <- c(1.0, -0.5)
+dL_dy <- numeric(length(res$y))
+dL_ds <- numeric(length(res$s))
+da    <- res$DT(dL_dx, dL_dy, dL_ds)
+da$db                 # gradient of L w.r.t. each entry of b
+#> [1]  7.000000e-01 -4.000000e-01 -6.162041e-12 -2.615861e-12
+da$dc                 # gradient of L w.r.t. each entry of c
+#> [1] 3.130900e-10 1.741567e-10
+```
+
+In a training loop you’d feed `da$db` and `da$dc` straight into a
+parameter update.
+
+## Forward versus adjoint: when to use each
+
+Both `D` and `DT` access the same underlying Jacobian, but their cost
+profile differs:
+
+- **`D(dA, db, dc)`** is right-multiplication by the Jacobian. Cost is
+  one solve of the same linear system per call. Use `D` when you have a
+  *small number of perturbation directions* (e.g., parameter sweeps) and
+  want to forecast the effect on the optimum.
+- **`DT(dx, dy, ds)`** is right-multiplication by the Jacobian’s
+  transpose. Same per-call cost, but the answer is a *gradient with
+  respect to all data entries simultaneously*. Use `DT` when you have an
+  upstream gradient on the optimum (typically from an autodiff system)
+  and need to propagate it through the conic optimisation.
+
+`mode = "dense"` factors `M` once on the first call and amortises the
+cost across subsequent `D` / `DT` invocations on the same problem, which
+is the right choice when you’ll evaluate either operator many times.
+
+## Choosing `dense` versus `lsqr`
+
+`solve_and_derivative` accepts two modes for the inner linear-algebra
+step:
+
+- **`mode = "lsqr"`** (default): matrix-free conjugate-gradient- style
+  iterative solve against the `M` operator. Memory is
+  $`O(\text{nnz}(A))`$; iteration count grows with the conditioning of
+  $`M`$. Appropriate for large sparse problems.
+- **`mode = "dense"`**: build $`M`$ as a dense matrix, factor with
+  Eigen’s LDLT, and reuse the factorisation across `D` / `DT` calls.
+  Cost is $`O(N^3)`$ once, $`O(N^2)`$ per call, where $`N = m + n + 1`$.
+  Appropriate for small problems and for workflows that re-apply `D` /
+  `DT` many times.
+
+Both modes produce the same answer to within solver tolerance. The dense
+path matches Python’s
+$`(M^\top M).\mathrm{ldlt}().\mathrm{solve}(M^\top \cdot
+\mathrm{rhs})`$ bit-for-bit; the LSQR path agrees with the dense path to
+roughly $`10^{-6}`$ at the default `atol = btol = 1e-8`.
+
+## Conventions
+
+- **PSD vectorisation.**
+  [`vec_symm()`](https://bnaras.github.io/diffcp/reference/vec_symm.md)
+  packs the lower triangle in column-major order with off-diagonals
+  scaled by $`\sqrt{2}`$ (the SCS convention).
+  [`unvec_symm()`](https://bnaras.github.io/diffcp/reference/unvec_symm.md)
+  is the inverse. This scaling makes the inner product
+  $`\langle \mathrm{vec}(A),
+  \mathrm{vec}(B) \rangle`$ equal $`\mathrm{tr}(AB)`$ for symmetric
+  $`A, B`$, which is what the cone-projection Jacobian expects.
+- **PSD with Clarabel.** Clarabel uses upper-triangular column- major;
+  `diffcp` permutes rows of $`A`$ and entries of $`b`$ to Clarabel order
+  on the way in and inverse-permutes the dual $`y`$ and slack $`s`$ on
+  the way out. The user-facing convention is SCS throughout.
+- **Exponential cones.** Each `ep` cone consumes three rows of $`A`$
+  (one cone per `count`); the dual `ed` cone is handled separately or
+  recovered via Moreau’s decomposition,
+  $`\Pi_{K^\ast}(x) = x + \Pi_K(-x)`$.
+- **Quadratic objectives.** `solve_only(P = P)` accepts a
+  positive-semidefinite `P` for the forward solve. The derivative path
+  through `solve_and_derivative` does **not** support `P` directly;
+  CVXR’s reduction chain canonicalises QPs into auxiliary-variable conic
+  problems before reaching the solver, so the loss is invisible at the
+  CVXR layer.
+
+## Connection to CVXR
+
+R users typically don’t call `diffcp` directly. CVXR (≥ 1.8.2) exposes a
+higher-level API:
+
+``` r
+
+library(CVXR)
+p <- Parameter(); x <- Variable(); value(p) <- 3
+prob <- Problem(Minimize((x - 2 * p)^2), list(x >= 0))
+psolve(prob, requires_grad = TRUE)
+backward(prob)
+gradient(p)             # 2  (since x* = 2p)
+delta(p) <- 1e-3
+derivative(prob)
+delta(x)                # 0.002
+```
+
+The `requires_grad = TRUE` flag routes the solve through the DIFFCP
+solver wrapper, which calls
+[`diffcp::solve_and_derivative`](https://bnaras.github.io/diffcp/reference/solve_and_derivative.md)
+under the hood. CVXR then handles the chain rule through any problem
+reductions (DGP log-transform, Complex2Real splitting, parameter
+canonicalisation) and reports gradients keyed by `Parameter` rather than
+by raw data entries.
+
+When you want the lower-level data-perturbation interface — for
+research, for fixtures that bypass CVXR canonicalisation, or for
+problems already in conic standard form — `diffcp` is the right entry
+point.
+
+## Citation
+
+If you use `diffcp` in academic work, please cite the original paper:
+
+> Agrawal, A.; Barratt, S.; Boyd, S.; Busseti, E.; Moursi, W.
+> “Differentiating through a cone program.” *Journal of Applied and
+> Numerical Optimization*, **1**(2), 107–115, 2019.
