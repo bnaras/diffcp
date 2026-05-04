@@ -1,0 +1,40 @@
+citHeader(
+  "If you use the 'diffcp' R package in published work, please cite ",
+  "BOTH the R package and the original paper that the package implements."
+)
+
+bibentry(
+  bibtype = "Manual",
+  header  = "1. The R package:",
+  title   = "{diffcp}: Differentiating Through Cone Programs",
+  author  = c(
+    person("Balasubramanian", "Narasimhan"),
+    person("Akshay", "Agrawal"),
+    person("Shane",  "Barratt"),
+    person("Stephen","Boyd"),
+    person("Enzo",   "Busseti"),
+    person("Walaa",  "Moursi")
+  ),
+  year    = sub("-.*", "", meta$Date %||% format(Sys.Date(), "%Y")),
+  note    = paste("R package version", meta$Version),
+  url     = meta$URL %||% "https://github.com/bnaras/diffcp"
+)
+
+bibentry(
+  bibtype = "Article",
+  header  = "2. The original paper:",
+  title   = "Differentiating through a cone program",
+  author  = c(
+    person("Akshay",  "Agrawal"),
+    person("Shane",   "Barratt"),
+    person("Stephen", "Boyd"),
+    person("Enzo",    "Busseti"),
+    person("Walaa",   "Moursi")
+  ),
+  journal = "Journal of Applied and Numerical Optimization",
+  year    = "2019",
+  volume  = "1",
+  number  = "2",
+  pages   = "107--115",
+  url     = "https://web.stanford.edu/~boyd/papers/diff_cone_prog.html"
+)

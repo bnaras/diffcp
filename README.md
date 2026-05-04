@@ -222,19 +222,28 @@ hard-code `solve_method = "ECOS"`. That's the entire surface area.
 
 ## Citation
 
-If you use `diffcp` in academic work, please cite the original paper:
+If you use `diffcp` in academic work, please cite **both** the R
+package and the original paper.  The full citations (with up-to-date
+version numbers and BibTeX) can always be obtained in R via:
 
-```bibtex
-@article{diffcp2019,
-    author       = {Agrawal, A. and Barratt, S. and Boyd, S. and Busseti, E. and Moursi, W.},
-    title        = {Differentiating through a cone program},
-    journal      = {Journal of Applied and Numerical Optimization},
-    year         = {2019},
-    volume       = {1},
-    number       = {2},
-    pages        = {107--115},
-}
+```r
+citation("diffcp")
 ```
+
+For convenience:
+
+* **R package**
+
+  Narasimhan B., Agrawal A., Barratt S., Boyd S., Busseti E., Moursi W. (2026).
+  *diffcp: Differentiating Through Cone Programs*. R package version 0.1.0.
+  <https://github.com/bnaras/diffcp>
+
+* **Original paper**
+
+  Agrawal A., Barratt S., Boyd S., Busseti E., Moursi W. (2019).
+  "Differentiating through a cone program." *Journal of Applied and
+  Numerical Optimization*, **1**(2), 107–115.
+  <https://web.stanford.edu/~boyd/papers/diff_cone_prog.html>
 
 ## License
 
