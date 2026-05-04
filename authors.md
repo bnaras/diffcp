@@ -2,17 +2,19 @@
 
 ## Authors
 
-- **Balasubramanian Narasimhan**. Author, maintainer.
+- **[Balasubramanian Narasimhan](https://naras.su.domains)**. Author,
+  maintainer.
 
-- **Akshay Agrawal**. Author.
+- **[Akshay Agrawal](https://www.akshayagrawal.com/)**. Author.
 
-- **Shane Barratt**. Author.
+- **[Shane Barratt](https://shanebarratt.com/)**. Author.
 
-- **Stephen Boyd**. Author.
+- **[Stephen Boyd](https://web.stanford.edu/~boyd/)**. Author.
 
-- **Enzo Busseti**. Author.
+- **[Enzo Busseti](https://enzobusseti.com/)**. Author.
 
-- **Walaa Moursi**. Author.
+- **[Walaa Moursi](https://sites.google.com/view/walaa-moursi/home)**.
+  Author.
 
 ## Citation
 
