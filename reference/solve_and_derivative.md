@@ -63,4 +63,6 @@ solve_and_derivative(
 
 ## Value
 
-A list with elements `x`, `y`, `s`, `D`, `DT`.
+A list with elements `x`, `y`, `s`, `info`, `D`, `DT`. `info` is the
+solver-status block returned by the underlying solver (`status`, `iter`,
+`solveTime`, `pobj`, ...); see `solve_only` for the same shape.

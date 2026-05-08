@@ -19,12 +19,12 @@ Useful links:
 
 Authors:
 
-- Steven Diamond
+- Akshay Agrawal
 
-- Parth Nobel
-
-- William Zheng
-
-- Anqi Fu
+- Shane Barratt
 
 - Stephen Boyd
+
+- Enzo Busseti
+
+- Walaa Moursi
