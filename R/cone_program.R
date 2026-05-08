@@ -310,7 +310,7 @@ solve_only <- function(A, b, c, cone_dict,
                          warm_start = warm_start,
                          solve_method = solve_method,
                          P = P, ...)
-  list(x = res$x, y = res$y, s = res$s)
+  list(x = res$x, y = res$y, s = res$s, info = res$info)
 }
 
 #' Solve a cone program and return forward / adjoint derivative operators
@@ -325,7 +325,10 @@ solve_only <- function(A, b, c, cone_dict,
 #' @inheritParams solve_only
 #' @param mode Differentiation mode: `"lsqr"` (default), `"dense"`,
 #'   or `"lpgd"`.
-#' @returns A list with elements `x`, `y`, `s`, `D`, `DT`.
+#' @returns A list with elements `x`, `y`, `s`, `info`, `D`, `DT`.
+#'   `info` is the solver-status block returned by the underlying
+#'   solver (`status`, `iter`, `solveTime`, `pobj`, ...); see
+#'   `solve_only` for the same shape.
 #' @export
 solve_and_derivative <- function(A, b, c, cone_dict,
                                  P = NULL,
@@ -358,5 +361,6 @@ solve_and_derivative <- function(A, b, c, cone_dict,
   cones <- parse_cone_dict(cone_dict)
   closures <- .make_derivative_closures(A, b, c, x, y, s, cones, mode)
 
-  list(x = x, y = y, s = s, D = closures$D, DT = closures$DT)
+  list(x = x, y = y, s = s, info = res$info,
+       D = closures$D, DT = closures$DT)
 }

@@ -38,7 +38,10 @@ or \code{"lpgd"}.}
 \item{...}{Additional control parameters forwarded to the solver.}
 }
 \value{
-A list with elements \code{x}, \code{y}, \code{s}, \code{D}, \code{DT}.
+A list with elements \code{x}, \code{y}, \code{s}, \code{info}, \code{D}, \code{DT}.
+\code{info} is the solver-status block returned by the underlying
+solver (\code{status}, \code{iter}, \code{solveTime}, \code{pobj}, ...); see
+\code{solve_only} for the same shape.
 }
 \description{
 Mirrors \code{diffcp.cone_program.solve_and_derivative}. Solves
