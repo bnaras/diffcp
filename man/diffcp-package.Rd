@@ -24,11 +24,11 @@ Useful links:
 
 Authors:
 \itemize{
-  \item Steven Diamond
-  \item Parth Nobel
-  \item William Zheng
-  \item Anqi Fu
+  \item Akshay Agrawal
+  \item Shane Barratt
   \item Stephen Boyd
+  \item Enzo Busseti
+  \item Walaa Moursi
 }
 
 }
