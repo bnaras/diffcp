@@ -1,4 +1,5 @@
-// DIFFCP SOURCE: diffcp/cpp/src/wrapper.cpp (replaced pybind11 with Rcpp).
+// DIFFCP SOURCE: diffcp/cpp/src/wrapper.cpp @ v1.1.8 (6a78143) (replaced pybind11 with Rcpp).
+// Upstream pin: see inst/UPSTREAM.dcf / upstream_info().
 //
 // Rcpp-callable entry points to the C++ derivative-machinery. The R
 // side hands us:

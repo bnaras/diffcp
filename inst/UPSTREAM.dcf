@@ -1,0 +1,14 @@
+Upstream: cvxgrp/diffcp
+Version: 1.1.8
+Commit: 6a78143daccc80db4c27da39ba7edf5c9a388586
+ShortCommit: 6a78143
+Date: 2026-01-26
+URL: https://github.com/cvxgrp/diffcp
+CVXPY: >= 1.6.3
+Snapshot: /Users/naras/research/cvxr/new_design/diffing/diffcp
+Notes: Pinned snapshot of the Python diffcp source that this R port
+  tracks. Per-file `## DIFFCP SOURCE:` headers reference paths inside
+  this upstream tree. The CVXPY constraint is diffcp's own runtime
+  dependency on the Python side; the R port has no direct CVXPY
+  dependency but ships into a CVXR ecosystem aligned to a CVXPY
+  version (see CVXR's own DESCRIPTION/Config fields).

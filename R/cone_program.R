@@ -1,4 +1,5 @@
-## DIFFCP SOURCE: diffcp/cone_program.py
+## DIFFCP SOURCE: diffcp/cone_program.py @ v1.1.8 (6a78143)
+## Upstream pin: see inst/UPSTREAM.dcf / upstream_info().
 ##
 ## Forward solve dispatch (Clarabel / SCS) plus the public
 ## `solve_only` and `solve_and_derivative` entry points. Derivative

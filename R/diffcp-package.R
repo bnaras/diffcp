@@ -1,4 +1,5 @@
-## DIFFCP SOURCE: diffcp/__init__.py
+## DIFFCP SOURCE: diffcp/__init__.py @ v1.1.8 (6a78143)
+## Upstream pin: see inst/UPSTREAM.dcf / upstream_info().
 ##
 ## Package-level documentation and namespace setup.
 

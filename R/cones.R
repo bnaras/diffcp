@@ -1,4 +1,5 @@
-## DIFFCP SOURCE: diffcp/cones.py (Python source of truth).
+## DIFFCP SOURCE: diffcp/cones.py @ v1.1.8 (6a78143) (Python source of truth).
+## Upstream pin: see inst/UPSTREAM.dcf / upstream_info().
 ##
 ## Cone projections: each `proj_*` function takes a numeric vector `x`
 ## of the appropriate length and returns Pi_K(x), the projection onto

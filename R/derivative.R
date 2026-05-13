@@ -1,7 +1,10 @@
-## DIFFCP SOURCE: diffcp/cone_program.py:632-902 (R-side orchestration
-## of `solve_and_derivative`).  All numerical heavy lifting (cone
-## projection Jacobians, M operator, dense LDLT solve, matrix-free
-## LSQR) is delegated to C++ via the wrappers in src/wrapper.cpp.
+## DIFFCP SOURCE: diffcp/cone_program.py:632-902 @ v1.1.8 (6a78143)
+## Upstream pin: see inst/UPSTREAM.dcf / upstream_info().
+##
+## R-side orchestration of `solve_and_derivative`. All numerical heavy
+## lifting (cone projection Jacobians, M operator, dense LDLT solve,
+## matrix-free LSQR) is delegated to C++ via the wrappers in
+## src/wrapper.cpp.
 ##
 ## This file mirrors the Python source line-for-line, except that the
 ## per-iteration linear-algebra routines (`dpi_dense`, `M_dense`,

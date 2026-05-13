@@ -1,4 +1,5 @@
-// DIFFCP SOURCE: diffcp/cpp/include/linop.h (verbatim).
+// DIFFCP SOURCE: diffcp/cpp/include/linop.h @ v1.1.8 (6a78143) (verbatim).
+// Upstream pin: see inst/UPSTREAM.dcf / upstream_info().
 
 #pragma once
 

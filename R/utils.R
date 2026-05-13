@@ -1,4 +1,5 @@
-## DIFFCP SOURCE: diffcp/cones.py (auxiliary utilities).
+## DIFFCP SOURCE: diffcp/cones.py @ v1.1.8 (6a78143) (auxiliary utilities).
+## Upstream pin: see inst/UPSTREAM.dcf / upstream_info().
 ##
 ## Small helpers shared across cone projection / Jacobian code.
 

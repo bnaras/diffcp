@@ -1,4 +1,5 @@
-// DIFFCP SOURCE: diffcp/cpp/include/eigen_includes.h
+// DIFFCP SOURCE: diffcp/cpp/include/eigen_includes.h @ v1.1.8 (6a78143)
+// Upstream pin: see inst/UPSTREAM.dcf / upstream_info().
 //
 // We include Eigen via RcppEigen so that the package picks up the
 // vendored Eigen shipped with the RcppEigen R package, instead of

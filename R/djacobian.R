@@ -1,4 +1,5 @@
-## DIFFCP SOURCE: diffcp/cpp/src/dprojection.cpp (C++ extension).
+## DIFFCP SOURCE: diffcp/cpp/src/dprojection.cpp @ v1.1.8 (6a78143) (C++ extension).
+## Upstream pin: see inst/UPSTREAM.dcf / upstream_info().
 ##
 ## Per-cone Jacobians of the projection operator.
 ##
