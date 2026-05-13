@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 # What `diffcp` is for
 
-Suppose you have a convex optimisation problem whose data — the
+Suppose you have a convex optimization problem whose data — the
 constraint matrix, the offset, the objective coefficients — depend
 on some upstream quantity (a parameter, a model weight, a
 hyperparameter, the output of a previous computation). You solve
@@ -37,7 +37,7 @@ Three concrete things you can do with it:
 * **Hyperparameter learning.** Solve a regularised problem inside
   a training loop and let gradient descent on the upstream loss
   learn the regulariser.
-* **End-to-end optimisation layers.** Embed a CVXR problem as a
+* **End-to-end optimization layers.** Embed a CVXR problem as a
   differentiable component of a larger model — see CVXR's
   `Problem$backward()` and `Problem$derivative()` API, which
   internally calls `diffcp`.
@@ -86,7 +86,7 @@ Differentiating "the optimum" turns out to mean something precise:
 3. The Jacobian of the optimum with respect to the data is then a
    bounded linear operator, computed by solving a linear system in
    $M = (Q - I)\,D\Pi(z) + I$ using either a dense LDLT
-   factorisation or a matrix-free LSQR iteration.
+   factorization or a matrix-free LSQR iteration.
 
 This is the construction in Busseti, Moursi, and Boyd (2019);
 `diffcp` packages it into two callables.
@@ -379,7 +379,7 @@ cost profile differs:
   with respect to all data entries simultaneously*. Use `DT`
   when you have an upstream gradient on the optimum (typically
   from an autodiff system) and need to propagate it through the
-  conic optimisation.
+  conic optimization.
 
 `mode = "dense"` factors `M` once on the first call and amortises
 the cost across subsequent `D` / `DT` invocations on the same
@@ -396,7 +396,7 @@ linear-algebra step:
   $O(\text{nnz}(A))$; iteration count grows with the conditioning
   of $M$. Appropriate for large sparse problems.
 * **`mode = "dense"`**: build $M$ as a dense matrix, factor with
-  Eigen's LDLT, and reuse the factorisation across `D` / `DT`
+  Eigen's LDLT, and reuse the factorization across `D` / `DT`
   calls. Cost is $O(N^3)$ once, $O(N^2)$ per call, where
   $N = m + n + 1$. Appropriate for small problems and for
   workflows that re-apply `D` / `DT` many times.

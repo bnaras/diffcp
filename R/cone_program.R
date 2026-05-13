@@ -80,7 +80,7 @@
 ##
 ## Differences from the Python source in this development version:
 ##   * ECOS branch is omitted (R `ECOSolveR` API differs; deferred
-##     until we need ECOS-specific behaviour for tests).
+##     until we need ECOS-specific behavior for tests).
 ##   * Clarabel PSD row-permutation (`permute_psd_rows` /
 ##     `inverse_permute_psd_solution`) is omitted — PSD support
 ##     arrives in Phase 2b alongside the PSD cone projection.

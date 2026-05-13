@@ -4,7 +4,7 @@
 ## Python diffcp's QP support is forward-only: solve_and_derivative
 ## with P != NULL and mode in {"dense", "lsqr", "lsmr"} explicitly
 ## errors and points the user to lpgd mode (cone_program.py:637-639).
-## We mirror both behaviours here:
+## We mirror both behaviors here:
 ##   * solve_only(P) returns x/y/s matching Python's reference for
 ##     the same problem.
 ##   * solve_and_derivative(P) errors with Python's exact message
