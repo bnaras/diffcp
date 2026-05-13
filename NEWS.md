@@ -28,7 +28,7 @@ First public release of the R port of [`diffcp`](https://github.com/cvxgrp/diffc
 ## Implementation
 
 * The numerical core is a faithful port of the C++ source in
-  [cvxgrp/diffcp](https://github.com/cvxgrp/diffcp/tree/main/cpp)
+  [cvxgrp/diffcp](https://github.com/cvxgrp/diffcp/tree/6a78143/cpp)
   (`linop.cpp`, `cones.cpp`, `deriv.cpp`, `lsqr.cpp`), called from R
   via `RcppEigen`.
 
