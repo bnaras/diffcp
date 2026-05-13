@@ -10,7 +10,7 @@ skip_if_not_installed("clarabel")
 
 # -- LP with one equality + nonneg orthant -------------------------
 test_that("solve_only matches Python diffcp on a small LP", {
-  ## minimise c^T x  s.t. 1^T x = 1, x >= 0   (n = 3)
+  ## minimize c^T x  s.t. 1^T x = 1, x >= 0   (n = 3)
   A_data <- c(1, -1, 0, 0,
               1,  0, -1, 0,
               1,  0, 0, -1)
@@ -36,7 +36,7 @@ test_that("solve_only matches Python diffcp on a small LP", {
                tolerance = 1e-10)
 })
 
-# -- SOC: minimise t s.t. ||x||_2 <= t, sum(x)=1 -------------------
+# -- SOC: minimize t s.t. ||x||_2 <= t, sum(x)=1 -------------------
 test_that("solve_only matches Python diffcp on a small SOC program", {
   A_data <- c(0, -1, 0, 0, 0,
               1,  0, -1, 0, 0,

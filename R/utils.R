@@ -3,7 +3,7 @@
 ##
 ## Small helpers shared across cone projection / Jacobian code.
 
-#' Symmetric vectorisation (SCS convention)
+#' Symmetric vectorization (SCS convention)
 #'
 #' Returns a vectorized representation of a symmetric matrix `X`,
 #' with off-diagonal entries scaled by sqrt(2) to make the SCS-style
@@ -61,7 +61,7 @@ unvec_symm <- function(x, dim) {
   X
 }
 
-#' PSD cone vectorised dimension
+#' PSD cone vectorized dimension
 #'
 #' For a `dim x dim` symmetric matrix, returns the length of its
 #' upper-triangular packed representation `dim*(dim+1)/2`.

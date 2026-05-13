@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{vec_symm}
 \alias{vec_symm}
-\title{Symmetric vectorisation (SCS convention)}
+\title{Symmetric vectorization (SCS convention)}
 \usage{
 vec_symm(X)
 }

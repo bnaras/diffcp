@@ -44,7 +44,7 @@
 }
 
 ## Permute rows of a CsparseMatrix A and entries of b for ONE PSD
-## block of dimension `n` (n*(n+1)/2 vectorised entries) starting at
+## block of dimension `n` (n*(n+1)/2 vectorized entries) starting at
 ## 1-based row index `row_offset`.
 .permute_psd_rows <- function(A, b, n, row_offset) {
   perms <- .psd_perms(n)
@@ -283,7 +283,7 @@
 #' Solve a cone program (forward only)
 #'
 #' Mirrors `diffcp.cone_program.solve_only`. Solves
-#'   minimise  c^T x  (+ 0.5 x^T P x)
+#'   minimize  c^T x  (+ 0.5 x^T P x)
 #'   subject to  A x + s = b,   s in K
 #' and returns the optimal `(x, y, s)`. Unlike `solve_and_derivative`
 #' this function does not build the derivative closures.
@@ -317,7 +317,7 @@ solve_only <- function(A, b, c, cone_dict,
 #' Solve a cone program and return forward / adjoint derivative operators
 #'
 #' Mirrors `diffcp.cone_program.solve_and_derivative`. Solves
-#'   minimise  c^T x        s.t.  A x + s = b,  s in K
+#'   minimize  c^T x        s.t.  A x + s = b,  s in K
 #' (with optional QP `0.5 x^T P x` term) and returns the optimal
 #' `(x, y, s)` together with closures `D` (forward) and `DT` (adjoint)
 #' that map perturbations of `(A, b, c, [P])` to perturbations of

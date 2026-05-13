@@ -63,7 +63,7 @@ Eigen::MatrixXd cpp_dprojection_dense(const Eigen::VectorXd &x,
 // -- Dense M = (Q - I) D pi(z) + I ----------------------------------
 //
 // Q must be passed dense.  This matches diffcp/cpp/src/deriv.cpp's
-// M_dense signature; the Python source materialises Q with
+// M_dense signature; the Python source materializes Q with
 // `Q.todense()` before the call.
 
 // [[Rcpp::export]]

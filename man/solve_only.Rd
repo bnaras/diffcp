@@ -38,7 +38,7 @@ A list with elements \code{x}, \code{y}, \code{s}, \code{info}.
 }
 \description{
 Mirrors \code{diffcp.cone_program.solve_only}. Solves
-minimise  c^T x  (+ 0.5 x^T P x)
+minimize  c^T x  (+ 0.5 x^T P x)
 subject to  A x + s = b,   s in K
 and returns the optimal \verb{(x, y, s)}. Unlike \code{solve_and_derivative}
 this function does not build the derivative closures.

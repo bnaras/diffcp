@@ -23,7 +23,7 @@ Given problem data `(A, b, c)` (and optionally a quadratic objective
 `P`), `diffcp` solves the primal–dual pair
 
 ```
-minimise    c'x          minimise    b'y
+minimize    c'x          minimize    b'y
 subject to  Ax + s = b   subject to  A'y + c = 0
             s in K                   y in K*
 ```
@@ -58,7 +58,7 @@ optional alternative forward solver.
 ```r
 library(diffcp)
 
-## Tiny LP: minimise c'x s.t. 1'x = 1, x >= 0  with n = 3
+## Tiny LP: minimize c'x s.t. 1'x = 1, x >= 0  with n = 3
 A <- Matrix::sparseMatrix(
   i = c(1, 2, 1, 3, 1, 4),
   j = c(1, 1, 2, 2, 3, 3),
@@ -98,7 +98,7 @@ package vignette (`vignette("diffcp", package = "diffcp")`).
 | Exponential cone | `ep` | ✓ | ✓ |
 | Exponential dual cone | `ed` | ✓ | ✓ |
 
-PSD vectorisation follows the SCS convention (lower-triangular
+PSD vectorization follows the SCS convention (lower-triangular
 column-major, with off-diagonals scaled by `sqrt(2)`). When solving
 PSD problems through Clarabel, `diffcp` automatically permutes the
 rows of `A` and the entries of `b` from SCS order to Clarabel's
@@ -147,7 +147,7 @@ set transitions) and the smoothed `lpgd` answer is preferable.
 
 **What is lost without it.** Through the diffcp R interface alone,
 `solve_and_derivative(P = P)` errors and points the user to `lpgd`.
-However, **the loss disappears at the CVXR layer**: CVXR canonicalises
+However, **the loss disappears at the CVXR layer**: CVXR canonicalizes
 QPs into auxiliary-variable conic problems via `cone_matrix_stuffing`
 before they reach the solver, so a user calling
 `psolve(prob, requires_grad = TRUE)` on a quadratic problem gets

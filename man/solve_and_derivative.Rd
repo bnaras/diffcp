@@ -45,7 +45,7 @@ solver (\code{status}, \code{iter}, \code{solveTime}, \code{pobj}, ...); see
 }
 \description{
 Mirrors \code{diffcp.cone_program.solve_and_derivative}. Solves
-minimise  c^T x        s.t.  A x + s = b,  s in K
+minimize  c^T x        s.t.  A x + s = b,  s in K
 (with optional QP \verb{0.5 x^T P x} term) and returns the optimal
 \verb{(x, y, s)} together with closures \code{D} (forward) and \code{DT} (adjoint)
 that map perturbations of \verb{(A, b, c, [P])} to perturbations of

@@ -71,7 +71,7 @@
   Q_sp <- .build_Q(A_csc, b, c)
   pi_z <- .skew_pi(z, cones, n_x = n, n_y = m)
 
-  ## D pi(v) for the dual cone, materialised once via the C++ side so
+  ## D pi(v) for the dual cone, materialized once via the C++ side so
   ## the same code path serves all cones (Zero/Nonneg/SOC today,
   ## PSD/EXP when those land).
   Dproj_dual <- cpp_dprojection_dense(z[(n + 1L):(n + m)], cones, dual = TRUE)

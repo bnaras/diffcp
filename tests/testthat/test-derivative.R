@@ -67,7 +67,7 @@ test_that("D and DT match Python diffcp on the LP fixture", {
                tolerance = 1e-10)
 })
 
-# -- SOC fixture: minimise t s.t. ||x||<=t, sum(x)=1 ---------------
+# -- SOC fixture: minimize t s.t. ||x||<=t, sum(x)=1 ---------------
 test_that("D and DT match Python diffcp on the SOC fixture", {
   A_data <- c(0, -1, 0, 0, 0,
               1,  0, -1, 0, 0,

@@ -1,7 +1,7 @@
 ## PSD-cone tests, ported from
 ##   /Users/naras/research/cvxr/new_design/diffing/diffcp/tests/test_clarabel_psd.py
 ##
-## Each Python test builds a problem in cvxpy, canonicalises to SCS form
+## Each Python test builds a problem in cvxpy, canonicalizes to SCS form
 ## via `scs_data_from_cvxpy_problem`, then solves via `diffcp.solve_and_derivative`
 ## with both SCS and Clarabel and asserts:
 ##   * obj_solver ~= cvxpy_obj at atol=1e-4
@@ -10,7 +10,7 @@
 ##   * test_constraint_satisfaction: A @ x + s ~= b at atol=1e-5
 ##   * test_derivative_lsqr_mode: DT() runs in lsqr mode and is finite
 ##
-## We don't have cvxpy in R; the canonicalised (A, b, c, cone_dict)
+## We don't have cvxpy in R; the canonicalized (A, b, c, cone_dict)
 ## and `cvxpy_obj` reference come from inst/python_parity/psd.py and
 ## are pinned here as numeric literals.
 

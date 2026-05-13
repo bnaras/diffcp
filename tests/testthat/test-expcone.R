@@ -1,10 +1,10 @@
 ## EXP-cone test, ported from
 ##   diffcp/tests/test_clarabel.py::test_expcone
 ##
-## Builds the entropy-maximisation problem
+## Builds the entropy-maximization problem
 ##   min  -sum(entr(y))
 ##   s.t.  sum(y) = 1,  y > 0   (n = 10)
-## canonicalises to SCS form (one z cone + 10 EXP cones), solves via
+## canonicalizes to SCS form (one z cone + 10 EXP cones), solves via
 ## Clarabel through diffcp in modes "dense" and "lsqr" (Python also
 ## checks "lsmr" which we don't expose), and asserts:
 ##   * D(dA, db, dc) ~= (x_pert - x, y_pert - y, s_pert - s)  at atol=1e-8

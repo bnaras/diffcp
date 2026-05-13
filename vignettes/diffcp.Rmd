@@ -34,9 +34,9 @@ Three concrete things you can do with it:
 
 * **Sensitivity analysis.** Quantify how much each constraint or
   cost coefficient matters at the optimum.
-* **Hyperparameter learning.** Solve a regularised problem inside
+* **Hyperparameter learning.** Solve a regularized problem inside
   a training loop and let gradient descent on the upstream loss
-  learn the regulariser.
+  learn the regularizer.
 * **End-to-end optimization layers.** Embed a CVXR problem as a
   differentiable component of a larger model — see CVXR's
   `Problem$backward()` and `Problem$derivative()` API, which
@@ -59,7 +59,7 @@ library(Matrix)
 
 $$
 \begin{aligned}
-\text{minimise}   &\quad c^\top x \\
+\text{minimize}   &\quad c^\top x \\
 \text{subject to} &\quad A x + s = b, \quad s \in K,
 \end{aligned}
 $$
@@ -105,7 +105,7 @@ with five entries:
   loss with respect to the optimum), returns `(dA, db, dc)`: the
   gradient of that loss with respect to the data.
 
-Both are functions, not matrices. The dense mode materialises the
+Both are functions, not matrices. The dense mode materializes the
 Jacobian as an Eigen matrix and factors it once; the LSQR mode
 applies the Jacobian and its transpose matrix-free, never
 forming the dense object. The trade-off is per-call cost
@@ -189,7 +189,7 @@ $$
 
 The variables are $(t, x_1, x_2, x_3)$. The block $(t, x)$ lives
 in a single 4-dimensional second-order cone; the equality goes in
-a zero cone of size 1. Since $t$ is being minimised against a
+a zero cone of size 1. Since $t$ is being minimized against a
 norm constraint, the optimum lies on the cone boundary
 $\|x\|_2 = t$, which is exactly the kind of active constraint
 that makes derivatives non-trivial.
@@ -222,12 +222,12 @@ automatically; from the R side you just call `D` and `DT`.
 # Worked example 3: a small semidefinite program
 
 The minimum-eigenvalue SDP: find a unit-trace PSD matrix that
-minimises $\langle C, X \rangle$ for given $C$. With
+minimizes $\langle C, X \rangle$ for given $C$. With
 $C = \mathrm{diag}(1, 0, 0, 0, -1)$, the optimum is rank-one and
 puts all weight on the eigenvector of $C$ with most-negative
 eigenvalue.
 
-PSD support requires a vectorisation convention. `diffcp` uses
+PSD support requires a vectorization convention. `diffcp` uses
 the SCS convention: lower-triangular column-major, with
 off-diagonals scaled by $\sqrt{2}$. The package exports
 `vec_symm()` and `unvec_symm()` for round-trips between symmetric
@@ -278,10 +278,10 @@ convention stays SCS throughout.
 # A practical sensitivity-analysis example
 
 Here is the canonical use case: **shadow prices**. Take a small
-LP — a profit-maximising production plan with a labour and a
+LP — a profit-maximizing production plan with a labor and a
 materials budget — and ask, *given the optimum, by how much would
-the profit change per extra unit of labour?* That number is the
-dual variable on the labour constraint. `diffcp` lets you compute
+the profit change per extra unit of labor?* That number is the
+dual variable on the labor constraint. `diffcp` lets you compute
 the same sensitivity for *any* perturbation of the data, including
 ones that have no closed-form dual interpretation.
 
@@ -295,9 +295,9 @@ x_1 + 3 x_2 \le 90,
 $$
 
 and ask: how does the optimum respond to a small change in the
-labour-budget right-hand side, $b_1 = 100$?
+labor-budget right-hand side, $b_1 = 100$?
 
-We rewrite the maximisation as a minimisation of $-c^\top x$, and
+We rewrite the maximization as a minimization of $-c^\top x$, and
 encode the two budget inequalities and the two non-negativity
 inequalities as four rows of a non-negative orthant slack
 constraint:
@@ -320,7 +320,7 @@ res$x      # optimal production plan
 
 The optimum makes $x_1 = 42$, $x_2 = 16$, profit $= 206$. Now use
 `D` to ask how the optimal $x$ would change if we got one extra
-unit of labour ($\Delta b_1 = 1$):
+unit of labor ($\Delta b_1 = 1$):
 
 ```{r shadow-D}
 dA <- sparseMatrix(i = integer(0), j = integer(0), x = numeric(0),
@@ -332,13 +332,13 @@ d$dx                       # change in optimal production
 -sum(c_lp * d$dx)          # change in profit
 ```
 
-`d$dx` says that an extra unit of labour increases $x_1$ by 0.6
+`d$dx` says that an extra unit of labor increases $x_1$ by 0.6
 and decreases $x_2$ by 0.2, and the corresponding profit change
-is $0.8$ per unit of labour: the labour-budget shadow price,
+is $0.8$ per unit of labor: the labor-budget shadow price,
 recovered from `D` rather than from the dual variable $y$.
 
 The advantage of going through `D` instead of the dual: it
-generalises. We can ask the same question about non-trivial
+generalizes. We can ask the same question about non-trivial
 perturbations of $A$ (a productivity gain on a particular
 input), `c` (a price change on a particular product), or any
 combination. The dual variable answers only the canonical
@@ -381,7 +381,7 @@ cost profile differs:
   from an autodiff system) and need to propagate it through the
   conic optimization.
 
-`mode = "dense"` factors `M` once on the first call and amortises
+`mode = "dense"` factors `M` once on the first call and amortizes
 the cost across subsequent `D` / `DT` invocations on the same
 problem, which is the right choice when you'll evaluate either
 operator many times.
@@ -409,7 +409,7 @@ path to roughly $10^{-6}$ at the default `atol = btol = 1e-8`.
 
 # Conventions
 
-* **PSD vectorisation.** `vec_symm()` packs the lower triangle in
+* **PSD vectorization.** `vec_symm()` packs the lower triangle in
   column-major order with off-diagonals scaled by $\sqrt{2}$
   (the SCS convention). `unvec_symm()` is the inverse. This
   scaling makes the inner product $\langle \mathrm{vec}(A),
@@ -427,7 +427,7 @@ path to roughly $10^{-6}$ at the default `atol = btol = 1e-8`.
 * **Quadratic objectives.** `solve_only(P = P)` accepts a
   positive-semidefinite `P` for the forward solve. The
   derivative path through `solve_and_derivative` does **not**
-  support `P` directly; CVXR's reduction chain canonicalises QPs
+  support `P` directly; CVXR's reduction chain canonicalizes QPs
   into auxiliary-variable conic problems before reaching the
   solver, so the loss is invisible at the CVXR layer.
 
@@ -452,11 +452,11 @@ The `requires_grad = TRUE` flag routes the solve through the
 DIFFCP solver wrapper, which calls `diffcp::solve_and_derivative`
 under the hood. CVXR then handles the chain rule through any
 problem reductions (DGP log-transform, Complex2Real splitting,
-parameter canonicalisation) and reports gradients keyed by
+parameter canonicalization) and reports gradients keyed by
 `Parameter` rather than by raw data entries.
 
 When you want the lower-level data-perturbation interface — for
-research, for fixtures that bypass CVXR canonicalisation, or for
+research, for fixtures that bypass CVXR canonicalization, or for
 problems already in conic standard form — `diffcp` is the right
 entry point.
 
