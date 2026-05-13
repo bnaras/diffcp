@@ -15,9 +15,8 @@ Description: A pure-R port of the Python 'diffcp' package. Computes the
     derivative of the optimal solution map of a convex cone program,
     treating the program as an implicit function of its data
     (constraint matrix, offset, objective coefficients, and optionally
-    a quadratic). Mirrors Agrawal, Barratt, and Boyd (2019)
-    <doi:10.48550/arXiv.1904.09043>; intended as the upstream of
-    differentiable-optimisation features in 'CVXR'.
+    a quadratic), mirroring Agrawal et al. (2019)
+    <doi:10.48550/arXiv.1904.09043>.
 URL: https://github.com/bnaras/diffcp
 BugReports: https://github.com/bnaras/diffcp/issues
 License: Apache License (>= 2)

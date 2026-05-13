@@ -61,6 +61,7 @@ reference:
 - title: Package
   contents:
   - diffcp-package
+  - upstream_info
 
 articles:
 - title: Get started

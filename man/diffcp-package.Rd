@@ -6,10 +6,16 @@
 \alias{diffcp}
 \title{diffcp: Differentiating Through Cone Programs}
 \description{
-R port of the Python \code{diffcp} package (Agrawal, Barratt, Boyd 2019).
-Computes the derivative of the optimal solution map of a convex cone
-program with respect to its data, via the implicit-function theorem
-on the homogeneous self-dual embedding.
+R port of the Python \code{diffcp} package, mirroring Agrawal, Barratt,
+Boyd, Busseti, and Moursi (2019).  Computes the derivative of the
+optimal solution map of a convex cone program with respect to its
+data, via the implicit-function theorem on the homogeneous self-dual
+embedding.
+}
+\details{
+If you use this package in published work, please cite \emph{both} the
+R package and the original paper; see \code{citation("diffcp")} for the
+full pair of BibTeX entries.
 }
 \seealso{
 Useful links:

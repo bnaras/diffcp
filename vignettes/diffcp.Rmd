@@ -462,10 +462,19 @@ entry point.
 
 # Citation
 
-If you use `diffcp` in academic work, please cite the original
-paper:
+If you use `diffcp` in academic work, please cite **both** the R
+package and the original paper. See `citation("diffcp")` for the
+canonical BibTeX entries.
 
-> Agrawal, A.; Barratt, S.; Boyd, S.; Busseti, E.; Moursi, W.
-> "Differentiating through a cone program."
-> *Journal of Applied and Numerical Optimization*, **1**(2),
-> 107–115, 2019.
+* **R package**
+
+  > Narasimhan, B.; Agrawal, A.; Barratt, S.; Boyd, S.; Busseti, E.;
+  > Moursi, W. *diffcp: Differentiating Through Cone Programs*.
+  > R package, 2026. <https://github.com/bnaras/diffcp>
+
+* **Original paper**
+
+  > Agrawal, A.; Barratt, S.; Boyd, S.; Busseti, E.; Moursi, W.
+  > "Differentiating through a cone program."
+  > *Journal of Applied and Numerical Optimization*, **1**(2),
+  > 107–115, 2019.
