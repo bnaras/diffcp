@@ -2,7 +2,7 @@
 
 ## What `diffcp` is for
 
-Suppose you have a convex optimisation problem whose data — the
+Suppose you have a convex optimization problem whose data — the
 constraint matrix, the offset, the objective coefficients — depend on
 some upstream quantity (a parameter, a model weight, a hyperparameter,
 the output of a previous computation). You solve the problem and get an
@@ -19,10 +19,10 @@ Three concrete things you can do with it:
 
 - **Sensitivity analysis.** Quantify how much each constraint or cost
   coefficient matters at the optimum.
-- **Hyperparameter learning.** Solve a regularised problem inside a
+- **Hyperparameter learning.** Solve a regularized problem inside a
   training loop and let gradient descent on the upstream loss learn the
-  regulariser.
-- **End-to-end optimisation layers.** Embed a CVXR problem as a
+  regularizer.
+- **End-to-end optimization layers.** Embed a CVXR problem as a
   differentiable component of a larger model — see CVXR’s
   `Problem$backward()` and `Problem$derivative()` API, which internally
   calls `diffcp`.
@@ -44,7 +44,7 @@ library(Matrix)
 
 ``` math
 \begin{aligned}
-\text{minimise}   &\quad c^\top x \\
+\text{minimize}   &\quad c^\top x \\
 \text{subject to} &\quad A x + s = b, \quad s \in K,
 \end{aligned}
 ```
@@ -68,7 +68,7 @@ Differentiating “the optimum” turns out to mean something precise:
     applies, and the optimum is a smooth function of the problem data.
 3.  The Jacobian of the optimum with respect to the data is then a
     bounded linear operator, computed by solving a linear system in
-    $`M = (Q - I)\,D\Pi(z) + I`$ using either a dense LDLT factorisation
+    $`M = (Q - I)\,D\Pi(z) + I`$ using either a dense LDLT factorization
     or a matrix-free LSQR iteration.
 
 This is the construction in Busseti, Moursi, and Boyd (2019); `diffcp`
@@ -88,7 +88,7 @@ five entries:
   respect to the optimum), returns `(dA, db, dc)`: the gradient of that
   loss with respect to the data.
 
-Both are functions, not matrices. The dense mode materialises the
+Both are functions, not matrices. The dense mode materializes the
 Jacobian as an Eigen matrix and factors it once; the LSQR mode applies
 the Jacobian and its transpose matrix-free, never forming the dense
 object. The trade-off is per-call cost (`dense` is faster once `M` has
@@ -176,7 +176,7 @@ A geometric example: project the simplex centroid onto a Lorentz cone,
 
 The variables are $`(t, x_1, x_2, x_3)`$. The block $`(t, x)`$ lives in
 a single 4-dimensional second-order cone; the equality goes in a zero
-cone of size 1. Since $`t`$ is being minimised against a norm
+cone of size 1. Since $`t`$ is being minimized against a norm
 constraint, the optimum lies on the cone boundary $`\|x\|_2 = t`$, which
 is exactly the kind of active constraint that makes derivatives
 non-trivial.
@@ -210,12 +210,12 @@ and `DT`.
 
 ## Worked example 3: a small semidefinite program
 
-The minimum-eigenvalue SDP: find a unit-trace PSD matrix that minimises
+The minimum-eigenvalue SDP: find a unit-trace PSD matrix that minimizes
 $`\langle C, X \rangle`$ for given $`C`$. With
 $`C = \mathrm{diag}(1, 0, 0, 0, -1)`$, the optimum is rank-one and puts
 all weight on the eigenvector of $`C`$ with most-negative eigenvalue.
 
-PSD support requires a vectorisation convention. `diffcp` uses the SCS
+PSD support requires a vectorization convention. `diffcp` uses the SCS
 convention: lower-triangular column-major, with off-diagonals scaled by
 $`\sqrt{2}`$. The package exports
 [`vec_symm()`](https://bnaras.github.io/diffcp/reference/vec_symm.md)
@@ -271,9 +271,9 @@ throughout.
 ## A practical sensitivity-analysis example
 
 Here is the canonical use case: **shadow prices**. Take a small LP — a
-profit-maximising production plan with a labour and a materials budget —
+profit-maximizing production plan with a labor and a materials budget —
 and ask, *given the optimum, by how much would the profit change per
-extra unit of labour?* That number is the dual variable on the labour
+extra unit of labor?* That number is the dual variable on the labor
 constraint. `diffcp` lets you compute the same sensitivity for *any*
 perturbation of the data, including ones that have no closed-form dual
 interpretation.
@@ -288,9 +288,9 @@ x_1 + 3 x_2 \le 90,
 ```
 
 and ask: how does the optimum respond to a small change in the
-labour-budget right-hand side, $`b_1 = 100`$?
+labor-budget right-hand side, $`b_1 = 100`$?
 
-We rewrite the maximisation as a minimisation of $`-c^\top x`$, and
+We rewrite the maximization as a minimization of $`-c^\top x`$, and
 encode the two budget inequalities and the two non-negativity
 inequalities as four rows of a non-negative orthant slack constraint:
 
@@ -315,7 +315,7 @@ res$x      # optimal production plan
 
 The optimum makes $`x_1 = 42`$, $`x_2 = 16`$, profit $`= 206`$. Now use
 `D` to ask how the optimal $`x`$ would change if we got one extra unit
-of labour ($`\Delta b_1 = 1`$):
+of labor ($`\Delta b_1 = 1`$):
 
 ``` r
 
@@ -330,12 +330,12 @@ d$dx                       # change in optimal production
 #> [1] 0.8
 ```
 
-`d$dx` says that an extra unit of labour increases $`x_1`$ by 0.6 and
+`d$dx` says that an extra unit of labor increases $`x_1`$ by 0.6 and
 decreases $`x_2`$ by 0.2, and the corresponding profit change is $`0.8`$
-per unit of labour: the labour-budget shadow price, recovered from `D`
+per unit of labor: the labor-budget shadow price, recovered from `D`
 rather than from the dual variable $`y`$.
 
-The advantage of going through `D` instead of the dual: it generalises.
+The advantage of going through `D` instead of the dual: it generalizes.
 We can ask the same question about non-trivial perturbations of $`A`$ (a
 productivity gain on a particular input), `c` (a price change on a
 particular product), or any combination. The dual variable answers only
@@ -377,9 +377,9 @@ profile differs:
   transpose. Same per-call cost, but the answer is a *gradient with
   respect to all data entries simultaneously*. Use `DT` when you have an
   upstream gradient on the optimum (typically from an autodiff system)
-  and need to propagate it through the conic optimisation.
+  and need to propagate it through the conic optimization.
 
-`mode = "dense"` factors `M` once on the first call and amortises the
+`mode = "dense"` factors `M` once on the first call and amortizes the
 cost across subsequent `D` / `DT` invocations on the same problem, which
 is the right choice when you’ll evaluate either operator many times.
 
@@ -393,7 +393,7 @@ step:
   $`O(\text{nnz}(A))`$; iteration count grows with the conditioning of
   $`M`$. Appropriate for large sparse problems.
 - **`mode = "dense"`**: build $`M`$ as a dense matrix, factor with
-  Eigen’s LDLT, and reuse the factorisation across `D` / `DT` calls.
+  Eigen’s LDLT, and reuse the factorization across `D` / `DT` calls.
   Cost is $`O(N^3)`$ once, $`O(N^2)`$ per call, where $`N = m + n + 1`$.
   Appropriate for small problems and for workflows that re-apply `D` /
   `DT` many times.
@@ -406,7 +406,7 @@ roughly $`10^{-6}`$ at the default `atol = btol = 1e-8`.
 
 ## Conventions
 
-- **PSD vectorisation.**
+- **PSD vectorization.**
   [`vec_symm()`](https://bnaras.github.io/diffcp/reference/vec_symm.md)
   packs the lower triangle in column-major order with off-diagonals
   scaled by $`\sqrt{2}`$ (the SCS convention).
@@ -426,7 +426,7 @@ roughly $`10^{-6}`$ at the default `atol = btol = 1e-8`.
 - **Quadratic objectives.** `solve_only(P = P)` accepts a
   positive-semidefinite `P` for the forward solve. The derivative path
   through `solve_and_derivative` does **not** support `P` directly;
-  CVXR’s reduction chain canonicalises QPs into auxiliary-variable conic
+  CVXR’s reduction chain canonicalizes QPs into auxiliary-variable conic
   problems before reaching the solver, so the loss is invisible at the
   CVXR layer.
 
@@ -453,18 +453,28 @@ solver wrapper, which calls
 [`diffcp::solve_and_derivative`](https://bnaras.github.io/diffcp/reference/solve_and_derivative.md)
 under the hood. CVXR then handles the chain rule through any problem
 reductions (DGP log-transform, Complex2Real splitting, parameter
-canonicalisation) and reports gradients keyed by `Parameter` rather than
+canonicalization) and reports gradients keyed by `Parameter` rather than
 by raw data entries.
 
 When you want the lower-level data-perturbation interface — for
-research, for fixtures that bypass CVXR canonicalisation, or for
+research, for fixtures that bypass CVXR canonicalization, or for
 problems already in conic standard form — `diffcp` is the right entry
 point.
 
 ## Citation
 
-If you use `diffcp` in academic work, please cite the original paper:
+If you use `diffcp` in academic work, please cite **both** the R package
+and the original paper. See `citation("diffcp")` for the canonical
+BibTeX entries.
 
-> Agrawal, A.; Barratt, S.; Boyd, S.; Busseti, E.; Moursi, W.
-> “Differentiating through a cone program.” *Journal of Applied and
-> Numerical Optimization*, **1**(2), 107–115, 2019.
+- **R package**
+
+  > Narasimhan, B.; Agrawal, A.; Barratt, S.; Boyd, S.; Busseti, E.;
+  > Moursi, W. *diffcp: Differentiating Through Cone Programs*. R
+  > package, 2026. <https://github.com/bnaras/diffcp>
+
+- **Original paper**
+
+  > Agrawal, A.; Barratt, S.; Boyd, S.; Busseti, E.; Moursi, W.
+  > “Differentiating through a cone program.” *Journal of Applied and
+  > Numerical Optimization*, **1**(2), 107–115, 2019.

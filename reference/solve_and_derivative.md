@@ -1,6 +1,6 @@
 # Solve a cone program and return forward / adjoint derivative operators
 
-Mirrors `diffcp.cone_program.solve_and_derivative`. Solves minimise c^T
+Mirrors `diffcp.cone_program.solve_and_derivative`. Solves minimize c^T
 x s.t. A x + s = b, s in K (with optional QP `0.5 x^T P x` term) and
 returns the optimal `(x, y, s)` together with closures `D` (forward) and
 `DT` (adjoint) that map perturbations of `(A, b, c, [P])` to

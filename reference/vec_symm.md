@@ -1,4 +1,4 @@
-# Symmetric vectorisation (SCS convention)
+# Symmetric vectorization (SCS convention)
 
 Returns a vectorized representation of a symmetric matrix `X`, with
 off-diagonal entries scaled by sqrt(2) to make the SCS-style dot product

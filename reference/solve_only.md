@@ -1,6 +1,6 @@
 # Solve a cone program (forward only)
 
-Mirrors `diffcp.cone_program.solve_only`. Solves minimise c^T x (+ 0.5
+Mirrors `diffcp.cone_program.solve_only`. Solves minimize c^T x (+ 0.5
 x^T P x) subject to A x + s = b, s in K and returns the optimal
 `(x, y, s)`. Unlike `solve_and_derivative` this function does not build
 the derivative closures.

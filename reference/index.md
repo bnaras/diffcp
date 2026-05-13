@@ -20,7 +20,7 @@ vec / unvec helpers for symmetric matrices.
   onto a Cartesian product of cones
 
 - [`vec_symm()`](https://bnaras.github.io/diffcp/reference/vec_symm.md)
-  : Symmetric vectorisation (SCS convention)
+  : Symmetric vectorization (SCS convention)
 
 - [`unvec_symm()`](https://bnaras.github.io/diffcp/reference/unvec_symm.md)
   :
@@ -47,3 +47,5 @@ vec / unvec helpers for symmetric matrices.
 - [`diffcp-package`](https://bnaras.github.io/diffcp/reference/diffcp-package.md)
   [`diffcp`](https://bnaras.github.io/diffcp/reference/diffcp-package.md)
   : diffcp: Differentiating Through Cone Programs
+- [`upstream_info()`](https://bnaras.github.io/diffcp/reference/upstream_info.md)
+  : Upstream Python diffcp pin

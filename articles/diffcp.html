@@ -66,7 +66,7 @@
 <div class="section level2">
 <h2 id="what-diffcp-is-for">What <code>diffcp</code> is for<a class="anchor" aria-label="anchor" href="#what-diffcp-is-for"></a>
 </h2>
-<p>Suppose you have a convex optimisation problem whose data — the
+<p>Suppose you have a convex optimization problem whose data — the
 constraint matrix, the offset, the objective coefficients — depend on
 some upstream quantity (a parameter, a model weight, a hyperparameter,
 the output of a previous computation). You solve the problem and get an
@@ -84,11 +84,11 @@ to a gradient on the data).</p>
 <strong>Sensitivity analysis.</strong> Quantify how much each
 constraint or cost coefficient matters at the optimum.</li>
 <li>
-<strong>Hyperparameter learning.</strong> Solve a regularised
+<strong>Hyperparameter learning.</strong> Solve a regularized
 problem inside a training loop and let gradient descent on the upstream
-loss learn the regulariser.</li>
+loss learn the regularizer.</li>
 <li>
-<strong>End-to-end optimisation layers.</strong> Embed a CVXR
+<strong>End-to-end optimization layers.</strong> Embed a CVXR
 problem as a differentiable component of a larger model — see CVXR’s
 <code>Problem$backward()</code> and <code>Problem$derivative()</code>
 API, which internally calls <code>diffcp</code>.</li>
@@ -107,9 +107,9 @@ RcppEigen.</p>
 </h2>
 <p><code>diffcp</code> differentiates the <em>primal–dual conic
 problem</em></p>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mtext mathvariant="normal">minimise</mtext></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mspace width="1.0em"></mspace><msup><mi>c</mi><mi>⊤</mi></msup><mi>x</mi></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mtext mathvariant="normal">subject to</mtext></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mspace width="1.0em"></mspace><mi>A</mi><mi>x</mi><mo>+</mo><mi>s</mi><mo>=</mo><mi>b</mi><mo>,</mo><mspace width="1.0em"></mspace><mi>s</mi><mo>∈</mo><mi>K</mi><mo>,</mo></mtd></mtr></mtable><annotation encoding="application/x-tex">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mtext mathvariant="normal">minimize</mtext></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mspace width="1.0em"></mspace><msup><mi>c</mi><mi>⊤</mi></msup><mi>x</mi></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right; padding-right: 0"><mtext mathvariant="normal">subject to</mtext></mtd><mtd columnalign="left" style="text-align: left; padding-left: 0"><mspace width="1.0em"></mspace><mi>A</mi><mi>x</mi><mo>+</mo><mi>s</mi><mo>=</mo><mi>b</mi><mo>,</mo><mspace width="1.0em"></mspace><mi>s</mi><mo>∈</mo><mi>K</mi><mo>,</mo></mtd></mtr></mtable><annotation encoding="application/x-tex">
 \begin{aligned}
-\text{minimise}   &amp;\quad c^\top x \\
+\text{minimize}   &amp;\quad c^\top x \\
 \text{subject to} &amp;\quad A x + s = b, \quad s \in K,
 \end{aligned}
 </annotation></semantics></math></p>
@@ -143,7 +143,7 @@ applies, and the optimum is a smooth function of the problem data.</li>
 <li>The Jacobian of the optimum with respect to the data is then a
 bounded linear operator, computed by solving a linear system in
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi><mo>=</mo><mo stretchy="false" form="prefix">(</mo><mi>Q</mi><mo>−</mo><mi>I</mi><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><mi>D</mi><mi mathvariant="normal">Π</mi><mo stretchy="false" form="prefix">(</mo><mi>z</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>I</mi></mrow><annotation encoding="application/x-tex">M = (Q - I)\,D\Pi(z) + I</annotation></semantics></math>
-using either a dense LDLT factorisation or a matrix-free LSQR
+using either a dense LDLT factorization or a matrix-free LSQR
 iteration.</li>
 </ol>
 <p>This is the construction in Busseti, Moursi, and Boyd (2019);
@@ -170,7 +170,7 @@ a gradient of a downstream loss with respect to the optimum), returns
 <code>(dA, db, dc)</code>: the gradient of that loss with respect to the
 data.</li>
 </ul>
-<p>Both are functions, not matrices. The dense mode materialises the
+<p>Both are functions, not matrices. The dense mode materializes the
 Jacobian as an Eigen matrix and factors it once; the LSQR mode applies
 the Jacobian and its transpose matrix-free, never forming the dense
 object. The trade-off is per-call cost (<code>dense</code> is faster
@@ -261,7 +261,7 @@ The block
 lives in a single 4-dimensional second-order cone; the equality goes in
 a zero cone of size 1. Since
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>t</mi><annotation encoding="application/x-tex">t</annotation></semantics></math>
-is being minimised against a norm constraint, the optimum lies on the
+is being minimized against a norm constraint, the optimum lies on the
 cone boundary
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="postfix">∥</mo><mi>x</mi><msub><mo stretchy="false" form="postfix">∥</mo><mn>2</mn></msub><mo>=</mo><mi>t</mi></mrow><annotation encoding="application/x-tex">\|x\|_2 = t</annotation></semantics></math>,
 which is exactly the kind of active constraint that makes derivatives
@@ -298,7 +298,7 @@ boundary geometry automatically; from the R side you just call
 <h2 id="worked-example-3-a-small-semidefinite-program">Worked example 3: a small semidefinite program<a class="anchor" aria-label="anchor" href="#worked-example-3-a-small-semidefinite-program"></a>
 </h2>
 <p>The minimum-eigenvalue SDP: find a unit-trace PSD matrix that
-minimises
+minimizes
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">⟨</mo><mi>C</mi><mo>,</mo><mi>X</mi><mo stretchy="false" form="postfix">⟩</mo></mrow><annotation encoding="application/x-tex">\langle C, X \rangle</annotation></semantics></math>
 for given
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>C</mi><annotation encoding="application/x-tex">C</annotation></semantics></math>.
@@ -307,7 +307,7 @@ With
 the optimum is rank-one and puts all weight on the eigenvector of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>C</mi><annotation encoding="application/x-tex">C</annotation></semantics></math>
 with most-negative eigenvalue.</p>
-<p>PSD support requires a vectorisation convention. <code>diffcp</code>
+<p>PSD support requires a vectorization convention. <code>diffcp</code>
 uses the SCS convention: lower-triangular column-major, with
 off-diagonals scaled by
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msqrt><mn>2</mn></msqrt><annotation encoding="application/x-tex">\sqrt{2}</annotation></semantics></math>.
@@ -367,10 +367,10 @@ on the way out, so the user-facing convention stays SCS throughout.</p>
 <h2 id="a-practical-sensitivity-analysis-example">A practical sensitivity-analysis example<a class="anchor" aria-label="anchor" href="#a-practical-sensitivity-analysis-example"></a>
 </h2>
 <p>Here is the canonical use case: <strong>shadow prices</strong>. Take
-a small LP — a profit-maximising production plan with a labour and a
+a small LP — a profit-maximizing production plan with a labor and a
 materials budget — and ask, <em>given the optimum, by how much would the
-profit change per extra unit of labour?</em> That number is the dual
-variable on the labour constraint. <code>diffcp</code> lets you compute
+profit change per extra unit of labor?</em> That number is the dual
+variable on the labor constraint. <code>diffcp</code> lets you compute
 the same sensitivity for <em>any</em> perturbation of the data,
 including ones that have no closed-form dual interpretation.</p>
 <p>We solve</p>
@@ -381,9 +381,9 @@ including ones that have no closed-form dual interpretation.</p>
 x_1 + 3 x_2 \le 90,
 </annotation></semantics></math></p>
 <p>and ask: how does the optimum respond to a small change in the
-labour-budget right-hand side,
+labor-budget right-hand side,
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>b</mi><mn>1</mn></msub><mo>=</mo><mn>100</mn></mrow><annotation encoding="application/x-tex">b_1 = 100</annotation></semantics></math>?</p>
-<p>We rewrite the maximisation as a minimisation of
+<p>We rewrite the maximization as a minimization of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>−</mi><msup><mi>c</mi><mi>⊤</mi></msup><mi>x</mi></mrow><annotation encoding="application/x-tex">-c^\top x</annotation></semantics></math>,
 and encode the two budget inequalities and the two non-negativity
 inequalities as four rows of a non-negative orthant slack
@@ -411,7 +411,7 @@ profit
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>=</mo><mn>206</mn></mrow><annotation encoding="application/x-tex">= 206</annotation></semantics></math>.
 Now use <code>D</code> to ask how the optimal
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>x</mi><annotation encoding="application/x-tex">x</annotation></semantics></math>
-would change if we got one extra unit of labour
+would change if we got one extra unit of labor
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi mathvariant="normal">Δ</mi><msub><mi>b</mi><mn>1</mn></msub><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\Delta b_1 = 1</annotation></semantics></math>):</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dA</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/Matrix/man/sparseMatrix.html" class="external-link">sparseMatrix</a></span><span class="op">(</span>i <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>, j <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">integer</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>, x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span>,</span>
@@ -423,17 +423,17 @@ would change if we got one extra unit of labour
 <span><span class="co">#&gt; [1]  0.6 -0.2</span></span>
 <span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">c_lp</span> <span class="op">*</span> <span class="va">d</span><span class="op">$</span><span class="va">dx</span><span class="op">)</span>          <span class="co"># change in profit</span></span>
 <span><span class="co">#&gt; [1] 0.8</span></span></code></pre></div>
-<p><code>d$dx</code> says that an extra unit of labour increases
+<p><code>d$dx</code> says that an extra unit of labor increases
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>1</mn></msub><annotation encoding="application/x-tex">x_1</annotation></semantics></math>
 by 0.6 and decreases
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msub><mi>x</mi><mn>2</mn></msub><annotation encoding="application/x-tex">x_2</annotation></semantics></math>
 by 0.2, and the corresponding profit change is
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mn>0.8</mn><annotation encoding="application/x-tex">0.8</annotation></semantics></math>
-per unit of labour: the labour-budget shadow price, recovered from
+per unit of labor: the labor-budget shadow price, recovered from
 <code>D</code> rather than from the dual variable
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>.</p>
 <p>The advantage of going through <code>D</code> instead of the dual: it
-generalises. We can ask the same question about non-trivial
+generalizes. We can ask the same question about non-trivial
 perturbations of
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>A</mi><annotation encoding="application/x-tex">A</annotation></semantics></math>
 (a productivity gain on a particular input), <code>c</code> (a price
@@ -481,10 +481,10 @@ by the Jacobian’s transpose. Same per-call cost, but the answer is a
 <em>gradient with respect to all data entries simultaneously</em>. Use
 <code>DT</code> when you have an upstream gradient on the optimum
 (typically from an autodiff system) and need to propagate it through the
-conic optimisation.</li>
+conic optimization.</li>
 </ul>
 <p><code>mode = "dense"</code> factors <code>M</code> once on the first
-call and amortises the cost across subsequent <code>D</code> /
+call and amortizes the cost across subsequent <code>D</code> /
 <code>DT</code> invocations on the same problem, which is the right
 choice when you’ll evaluate either operator many times.</p>
 </div>
@@ -505,7 +505,7 @@ Appropriate for large sparse problems.</li>
 <li>
 <strong><code>mode = "dense"</code></strong>: build
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>M</mi><annotation encoding="application/x-tex">M</annotation></semantics></math>
-as a dense matrix, factor with Eigen’s LDLT, and reuse the factorisation
+as a dense matrix, factor with Eigen’s LDLT, and reuse the factorization
 across <code>D</code> / <code>DT</code> calls. Cost is
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi><mo stretchy="false" form="prefix">(</mo><msup><mi>N</mi><mn>3</mn></msup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">O(N^3)</annotation></semantics></math>
 once,
@@ -528,7 +528,7 @@ at the default <code>atol = btol = 1e-8</code>.</p>
 </h2>
 <ul>
 <li>
-<strong>PSD vectorisation.</strong> <code><a href="../reference/vec_symm.html">vec_symm()</a></code> packs
+<strong>PSD vectorization.</strong> <code><a href="../reference/vec_symm.html">vec_symm()</a></code> packs
 the lower triangle in column-major order with off-diagonals scaled by
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><msqrt><mn>2</mn></msqrt><annotation encoding="application/x-tex">\sqrt{2}</annotation></semantics></math>
 (the SCS convention). <code><a href="../reference/unvec_symm.html">unvec_symm()</a></code> is the inverse. This
@@ -562,7 +562,7 @@ handled separately or recovered via Moreau’s decomposition,
 <code>solve_only(P = P)</code> accepts a positive-semidefinite
 <code>P</code> for the forward solve. The derivative path through
 <code>solve_and_derivative</code> does <strong>not</strong> support
-<code>P</code> directly; CVXR’s reduction chain canonicalises QPs into
+<code>P</code> directly; CVXR’s reduction chain canonicalizes QPs into
 auxiliary-variable conic problems before reaching the solver, so the
 loss is invisible at the CVXR layer.</li>
 </ul>
@@ -586,24 +586,38 @@ loss is invisible at the CVXR layer.</li>
 the DIFFCP solver wrapper, which calls
 <code><a href="../reference/solve_and_derivative.html">diffcp::solve_and_derivative</a></code> under the hood. CVXR then
 handles the chain rule through any problem reductions (DGP
-log-transform, Complex2Real splitting, parameter canonicalisation) and
+log-transform, Complex2Real splitting, parameter canonicalization) and
 reports gradients keyed by <code>Parameter</code> rather than by raw
 data entries.</p>
 <p>When you want the lower-level data-perturbation interface — for
-research, for fixtures that bypass CVXR canonicalisation, or for
+research, for fixtures that bypass CVXR canonicalization, or for
 problems already in conic standard form — <code>diffcp</code> is the
 right entry point.</p>
 </div>
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
-<p>If you use <code>diffcp</code> in academic work, please cite the
-original paper:</p>
+<p>If you use <code>diffcp</code> in academic work, please cite
+<strong>both</strong> the R package and the original paper. See
+<code>citation("diffcp")</code> for the canonical BibTeX entries.</p>
+<ul>
+<li>
+<p><strong>R package</strong></p>
+<blockquote>
+<p>Narasimhan, B.; Agrawal, A.; Barratt, S.; Boyd, S.; Busseti, E.;
+Moursi, W. <em>diffcp: Differentiating Through Cone Programs</em>. R
+package, 2026. <a href="https://github.com/bnaras/diffcp" class="external-link uri">https://github.com/bnaras/diffcp</a></p>
+</blockquote>
+</li>
+<li>
+<p><strong>Original paper</strong></p>
 <blockquote>
 <p>Agrawal, A.; Barratt, S.; Boyd, S.; Busseti, E.; Moursi, W.
 “Differentiating through a cone program.” <em>Journal of Applied and
 Numerical Optimization</em>, <strong>1</strong>(2), 107–115, 2019.</p>
 </blockquote>
+</li>
+</ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
