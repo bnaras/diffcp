@@ -1,6 +1,6 @@
 # Differentiating Through a Cone Program with diffcp
 
-## What `diffcp` is for
+## Introduction
 
 Suppose you have a convex optimization problem whose data — the
 constraint matrix, the offset, the objective coefficients — depend on
@@ -95,7 +95,7 @@ object. The trade-off is per-call cost (`dense` is faster once `M` has
 been factored) versus memory and asymptotic scaling (`lsqr` is the only
 viable choice for very large problems).
 
-## Worked example 1: a linear program
+## Example 1: a linear program
 
 The smallest illustrative case: pick the cheapest non-negative mixture
 of three goods that sums to one,
@@ -165,7 +165,7 @@ The agreement is at the level of the Clarabel solve tolerance, not the
 LSQR tolerance — the per-call derivative *is* the exact
 implicit-function-theorem answer at this point.
 
-## Worked example 2: a second-order-cone program
+## Example 2: a second-order-cone program
 
 A geometric example: project the simplex centroid onto a Lorentz cone,
 
@@ -208,7 +208,7 @@ the cone) and zero (interior of the polar cone). The package handles all
 the boundary geometry automatically; from the R side you just call `D`
 and `DT`.
 
-## Worked example 3: a small semidefinite program
+## Example 3: a small semidefinite program
 
 The minimum-eigenvalue SDP: find a unit-trace PSD matrix that minimizes
 $`\langle C, X \rangle`$ for given $`C`$. With
