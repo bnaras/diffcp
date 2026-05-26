@@ -93,7 +93,8 @@ test_that("scs: D matches finite-diff on LS-eq problem (mode='lsqr')", {
                                       scs_lseq_cone_dict,
                                       mode = "lsqr",
                                       solve_method = "SCS",
-                                      eps = 1e-10)
+                                      eps = 1e-10,
+                                      adaptive_scale = FALSE)
   dA <- .dA_from_pattern(scs_lseq_A_A_i, scs_lseq_A_A_p,
                          scs_lseq_lsqr_dA_data, scs_lseq_A_shape)
   d <- res$D(dA, scs_lseq_lsqr_db, scs_lseq_lsqr_dc)
@@ -103,7 +104,8 @@ test_that("scs: D matches finite-diff on LS-eq problem (mode='lsqr')", {
                                  scs_lseq_c + scs_lseq_lsqr_dc,
                                  scs_lseq_cone_dict,
                                  solve_method = "SCS",
-                                 eps = 1e-10)
+                                 eps = 1e-10,
+                                 adaptive_scale = FALSE)
 
   expect_lt(max(abs(d$dx - (res_pert$x - res$x))), 1e-8)
   expect_lt(max(abs(d$dy - (res_pert$y - res$y))), 1e-8)
@@ -117,7 +119,8 @@ test_that("scs: D matches finite-diff on LS-eq problem (mode='dense')", {
                                       scs_lseq_cone_dict,
                                       mode = "dense",
                                       solve_method = "SCS",
-                                      eps = 1e-10)
+                                      eps = 1e-10,
+                                      adaptive_scale = FALSE)
   dA <- .dA_from_pattern(scs_lseq_A_A_i, scs_lseq_A_A_p,
                          scs_lseq_dense_dA_data, scs_lseq_A_shape)
   d <- res$D(dA, scs_lseq_dense_db, scs_lseq_dense_dc)
@@ -127,7 +130,8 @@ test_that("scs: D matches finite-diff on LS-eq problem (mode='dense')", {
                                  scs_lseq_c + scs_lseq_dense_dc,
                                  scs_lseq_cone_dict,
                                  solve_method = "SCS",
-                                 eps = 1e-10)
+                                 eps = 1e-10,
+                                 adaptive_scale = FALSE)
 
   expect_lt(max(abs(d$dx - (res_pert$x - res$x))), 1e-8)
   expect_lt(max(abs(d$dy - (res_pert$y - res$y))), 1e-8)

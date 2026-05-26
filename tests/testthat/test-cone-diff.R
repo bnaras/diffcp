@@ -123,7 +123,7 @@ test_that("_proj_psd matches Python diffcp reference (15 random matrices)", {
     p <- diffcp::pi(x, cones, dual = FALSE)
     expect_lt(max(abs(p - p_ref)), 1e-10)
     ## PSD is self-dual.
-    expect_lt(max(abs(p - diffcp::pi(x, cones, dual = TRUE))), 1e-15)
+    expect_lt(max(abs(p - diffcp::pi(x, cones, dual = TRUE))), 1e-12)
   }
 })
 

@@ -1,0 +1,368 @@
+---
+title: "Reproducing CRAN noLD Diagnostics"
+format: gfm
+---
+
+This note records the Docker setup used to investigate CRAN's
+`noLD.log` failure for `diffcp`.
+
+The important finding was that `--disable-long-double` alone did not
+reproduce the failure. The failure was reproduced with:
+
+- Fedora 42, x86_64
+- R-devel built with `--disable-long-double`
+- R's reference BLAS, `libRblas.so`
+- `scs` 3.2.7
+- the SCS LS-eq finite-difference tests using `eps = 1e-10` and
+  default `adaptive_scale = TRUE`
+
+The same Fedora noLD build linked against OpenBLAS did not reproduce the
+failure.
+
+## Directory Layout
+
+The commands below assume this layout:
+
+```text
+codex/
+  diffcp/
+  fedora-nold/
+    Dockerfile
+    Dockerfile.refblas
+  fedora-nold-debug/
+    scs-debug.R
+    scs-eps-grid.R
+    run-patched-canonical-lseq.R
+```
+
+Run commands from the parent directory:
+
+```sh
+cd /Users/naras/llms/codex
+```
+
+## Dockerfile: Fedora noLD with OpenBLAS
+
+This image builds R-devel with `--disable-long-double` and links R
+against system BLAS/LAPACK. On Fedora 42 this resolved to OpenBLAS.
+
+Save as `fedora-nold/Dockerfile`.
+
+```dockerfile
+FROM --platform=linux/amd64 fedora:42
+
+RUN dnf -y update && \
+    dnf -y install \
+      gcc gcc-c++ gcc-gfortran make \
+      wget curl tar gzip bzip2 xz patch diffutils findutils file which \
+      git subversion rsync \
+      readline-devel pcre2-devel zlib-devel bzip2-devel xz-devel \
+      libcurl-devel openssl-devel libxml2-devel \
+      openblas-devel lapack-devel \
+      cairo-devel libpng-devel libjpeg-turbo-devel libtiff-devel \
+      libicu-devel \
+      texinfo texlive-scheme-basic texlive-parskip texlive-natbib \
+      java-latest-openjdk-devel \
+      && dnf clean all
+
+WORKDIR /opt/src
+
+RUN svn checkout https://svn.r-project.org/R/trunk R-devel
+
+WORKDIR /opt/src/R-devel
+
+RUN ./tools/rsync-recommended
+
+RUN ./configure \
+      --prefix=/opt/R/devel-nold \
+      --disable-long-double \
+      --enable-R-shlib \
+      --with-blas \
+      --with-lapack \
+      --with-readline \
+      --with-x=no \
+      --without-recommended-packages
+
+RUN make -j2
+RUN make install
+
+ENV PATH="/opt/R/devel-nold/bin:${PATH}"
+ENV R_HOME="/opt/R/devel-nold/lib64/R"
+ENV MAKEFLAGS="-j2"
+
+RUN Rscript -e 'cat(R.version.string, "\n"); print(capabilities("long.double")); print(extSoftVersion()); cat("platform=", R.version$platform, "\n")'
+```
+
+Build it:
+
+```sh
+docker build --platform=linux/amd64 \
+  -t diffcp-fedora42-nold-rdevel \
+  -f fedora-nold/Dockerfile \
+  fedora-nold 2>&1 | tee fedora-nold/build.log
+```
+
+## Dockerfile: Fedora noLD with R Reference BLAS
+
+This is the image that reproduced the CRAN `noLD.log` failure. It omits
+`--with-blas` and `--with-lapack`, so R uses its own reference BLAS:
+
+```text
+/opt/R/devel-nold/lib64/R/lib/libRblas.so
+```
+
+Save as `fedora-nold/Dockerfile.refblas`.
+
+```dockerfile
+FROM --platform=linux/amd64 fedora:42
+
+RUN dnf -y update && \
+    dnf -y install \
+      gcc gcc-c++ gcc-gfortran make \
+      wget curl tar gzip bzip2 xz patch diffutils findutils file which \
+      git subversion rsync \
+      readline-devel pcre2-devel zlib-devel bzip2-devel xz-devel \
+      libcurl-devel openssl-devel libxml2-devel \
+      openblas-devel lapack-devel \
+      cairo-devel libpng-devel libjpeg-turbo-devel libtiff-devel \
+      libicu-devel \
+      texinfo texlive-scheme-basic texlive-parskip texlive-natbib \
+      java-latest-openjdk-devel \
+      && dnf clean all
+
+WORKDIR /opt/src
+
+RUN svn checkout https://svn.r-project.org/R/trunk R-devel
+
+WORKDIR /opt/src/R-devel
+
+RUN ./tools/rsync-recommended
+
+RUN ./configure \
+      --prefix=/opt/R/devel-nold \
+      --disable-long-double \
+      --enable-R-shlib \
+      --with-readline \
+      --with-x=no \
+      --without-recommended-packages
+
+RUN make -j2
+RUN make install
+
+ENV PATH="/opt/R/devel-nold/bin:${PATH}"
+ENV R_HOME="/opt/R/devel-nold/lib64/R"
+ENV MAKEFLAGS="-j2"
+
+RUN Rscript -e 'cat(R.version.string, "\n"); print(capabilities("long.double")); print(extSoftVersion()); cat("platform=", R.version$platform, "\n")'
+```
+
+Build it:
+
+```sh
+docker build --platform=linux/amd64 \
+  -t diffcp-fedora42-nold-rdevel-refblas \
+  -f fedora-nold/Dockerfile.refblas \
+  fedora-nold 2>&1 | tee fedora-nold/build-refblas.log
+```
+
+Check the result:
+
+```sh
+docker run --rm --platform=linux/amd64 \
+  diffcp-fedora42-nold-rdevel-refblas \
+  Rscript -e 'cat(R.version.string, "\n"); print(capabilities("long.double")); print(extSoftVersion()[["BLAS"]])'
+```
+
+Expected key properties:
+
+```text
+capabilities("long.double") == FALSE
+BLAS == "/opt/R/devel-nold/lib64/R/lib/libRblas.so"
+```
+
+## Install Diagnostic Dependencies
+
+Use separate Docker volumes for the two images, so packages compiled
+against OpenBLAS and reference BLAS are not mixed.
+
+Reference BLAS volume:
+
+```sh
+docker volume create diffcp-fedora-nold-refblas-r-lib
+```
+
+Install dependencies:
+
+```sh
+docker run --rm --platform=linux/amd64 \
+  -e R_LIBS_SITE=/usr/local/lib/R/site-library \
+  -v diffcp-fedora-nold-refblas-r-lib:/usr/local/lib/R/site-library \
+  diffcp-fedora42-nold-rdevel-refblas \
+  Rscript -e 'install.packages(c("lattice", "Rcpp", "cli", "rlang", "scs", "Matrix", "RcppEigen"), repos = "https://cloud.r-project.org")'
+```
+
+`clarabel` was intentionally not installed during this diagnostic path:
+under amd64 emulation on Apple Silicon, Rust/rustc was unstable. The SCS
+failure can be reproduced without Clarabel by removing `clarabel` from a
+temporary copy of `DESCRIPTION` before installing `diffcp`.
+
+## Reproduce the Failure
+
+Install the package from a temporary copy, removing only the Clarabel
+import for this diagnostic run:
+
+```sh
+docker run --rm --platform=linux/amd64 \
+  -e R_LIBS_SITE=/usr/local/lib/R/site-library \
+  -v diffcp-fedora-nold-refblas-r-lib:/usr/local/lib/R/site-library \
+  -v "$PWD/diffcp:/src" \
+  -v "$PWD/fedora-nold-debug:/work" \
+  diffcp-fedora42-nold-rdevel-refblas \
+  bash -lc 'set -e
+    rm -rf /tmp/diffcp-diagnostic
+    cp -a /src /tmp/diffcp-diagnostic
+    find /tmp/diffcp-diagnostic/src \( -name "*.o" -o -name "*.so" -o -name "*.dll" \) -delete
+    sed -i "/clarabel/d" /tmp/diffcp-diagnostic/DESCRIPTION
+    R CMD INSTALL --library=/usr/local/lib/R/site-library /tmp/diffcp-diagnostic >/tmp/diffcp-install.log 2>&1
+    Rscript /work/scs-debug.R'
+```
+
+The failing signature is:
+
+```text
+MODE: lsqr
+pert status: solved (inaccurate - reached max_iters)
+pert iter:   100000
+pert scale:  1e+06
+max abs D-FD dx: about 3.585e-4
+
+MODE: dense
+same perturbed solve failure and same dx error
+```
+
+This matches the CRAN `noLD.log` failure: both `lsqr` and `dense` fail
+through the same inaccurate perturbed forward SCS solve.
+
+## Isolate the Cause
+
+Run the control grid:
+
+```sh
+docker run --rm --platform=linux/amd64 \
+  -e R_LIBS_SITE=/usr/local/lib/R/site-library \
+  -v diffcp-fedora-nold-refblas-r-lib:/usr/local/lib/R/site-library \
+  -v "$PWD/fedora-nold-debug:/work" \
+  diffcp-fedora42-nold-rdevel-refblas \
+  bash -lc 'cd /work; Rscript scs-eps-grid.R'
+```
+
+The key comparison was:
+
+```text
+explicit eps=1e-10, adaptive_scale=TRUE:
+  pert iter 100000, scale 1e+06, dx error about 3.585e-4
+
+eps=1e-10, adaptive_scale=FALSE:
+  base solved, pert solved, scale 0.1, dx error about 8e-10
+```
+
+So the problem is not a single-precision/no-long-double tolerance issue.
+It is a solver-path instability in SCS adaptive scaling for this tiny
+finite-difference perturbation when R uses reference BLAS.
+
+## Test the Patch
+
+The test-only patch is to set `adaptive_scale = FALSE` in the two
+SCS LS-eq finite-difference tests, for both the base and perturbed
+solves:
+
+- `tests/testthat/test-canonical.R`, LS-eq `mode = "lsqr"`
+- `tests/testthat/test-canonical.R`, LS-eq `mode = "dense"`
+
+Run the patched diagnostic:
+
+```sh
+docker run --rm --platform=linux/amd64 \
+  -e R_LIBS_SITE=/usr/local/lib/R/site-library \
+  -v diffcp-fedora-nold-refblas-r-lib:/usr/local/lib/R/site-library \
+  -v "$PWD/diffcp:/src" \
+  -v "$PWD/fedora-nold-debug:/work" \
+  diffcp-fedora42-nold-rdevel-refblas \
+  bash -lc 'set -e
+    rm -rf /tmp/diffcp-patched
+    cp -a /src /tmp/diffcp-patched
+    find /tmp/diffcp-patched/src \( -name "*.o" -o -name "*.so" -o -name "*.dll" \) -delete
+    sed -i "/clarabel/d" /tmp/diffcp-patched/DESCRIPTION
+    R CMD INSTALL --library=/usr/local/lib/R/site-library /tmp/diffcp-patched >/tmp/diffcp-install.log 2>&1
+    Rscript /work/run-patched-canonical-lseq.R'
+```
+
+Expected result:
+
+```text
+MODE: lsqr
+base status/iter/scale: solved 9125 0.1
+pert status/iter/scale: solved 9275 0.1
+dx 7.9e-10
+dy 8.4e-11
+ds 1.6e-09
+
+MODE: dense
+base status/iter/scale: solved 9125 0.1
+pert status/iter/scale: solved 9275 0.1
+dx 8.1e-10
+dy 6.2e-11
+ds 1.6e-09
+```
+
+## MKL Note
+
+The separate `MKL.log` issue was a PSD self-duality assertion in
+`tests/testthat/test-cone-diff.R`. The assertion compared two equivalent
+PSD projections at `1e-15`. MKL eigenvalue/eigenvector arithmetic showed
+differences around `1e-14`, while the Python-reference PSD projection
+check remained much looser at `1e-10`.
+
+The test-only adjustment was:
+
+```diff
+- expect_lt(max(abs(p - diffcp::pi(x, cones, dual = TRUE))), 1e-15)
++ expect_lt(max(abs(p - diffcp::pi(x, cones, dual = TRUE))), 1e-12)
+```
+
+## Current Test-Only Patch
+
+```diff
+diff --git a/tests/testthat/test-canonical.R b/tests/testthat/test-canonical.R
+@@
+                                       mode = "lsqr",
+                                       solve_method = "SCS",
+-                                      eps = 1e-10)
++                                      eps = 1e-10,
++                                      adaptive_scale = FALSE)
+@@
+                                  scs_lseq_cone_dict,
+                                  solve_method = "SCS",
+-                                 eps = 1e-10)
++                                 eps = 1e-10,
++                                 adaptive_scale = FALSE)
+@@
+                                       mode = "dense",
+                                       solve_method = "SCS",
+-                                      eps = 1e-10)
++                                      eps = 1e-10,
++                                      adaptive_scale = FALSE)
+@@
+                                  scs_lseq_cone_dict,
+                                  solve_method = "SCS",
+-                                 eps = 1e-10)
++                                 eps = 1e-10,
++                                 adaptive_scale = FALSE)
+
+diff --git a/tests/testthat/test-cone-diff.R b/tests/testthat/test-cone-diff.R
+@@
+     ## PSD is self-dual.
+-    expect_lt(max(abs(p - diffcp::pi(x, cones, dual = TRUE))), 1e-15)
++    expect_lt(max(abs(p - diffcp::pi(x, cones, dual = TRUE))), 1e-12)
+```
+

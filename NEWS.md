@@ -1,3 +1,9 @@
+# diffcp 0.1.1
+
+* Fix `scs` issue with adaptive scaling triggered on R with _no long
+  double_ and also with MKL tolerance.
+* Fix typo issues pointed out by CRAN.
+
 # diffcp 0.1.0
 
 First public release of the R port of [`diffcp`](https://github.com/cvxgrp/diffcp).
