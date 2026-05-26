@@ -11,7 +11,7 @@ Authors@R: c(
     person("Stephen", "Boyd",   role = "aut"),
     person("Enzo", "Busseti",   role = "aut"),
     person("Walaa", "Moursi",   role = "aut"))
-Description: A pure-`R` port of the 'python' 'diffcp' package. Computes the
+Description: A port of the 'python' 'diffcp' package. Computes the
     derivative of the optimal solution map of a convex cone program,
     treating the program as an implicit function of its data
     (constraint matrix, offset, objective coefficients, and optionally
