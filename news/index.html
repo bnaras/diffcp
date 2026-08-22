@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">diffcp</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,7 +31,12 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.1" id="diffcp-011">diffcp 0.1.1<a class="anchor" aria-label="anchor" href="#diffcp-011"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.1.2" id="diffcp-012">diffcp 0.1.2<a class="anchor" aria-label="anchor" href="#diffcp-012"></a></h2>
+<ul><li>
+<code><a href="../reference/solve_and_derivative.html">solve_and_derivative()</a></code> now reports <code>dA</code> on the sparsity pattern of <code>A</code> <strong>including any explicit zeros</strong>, matching Python <code>diffcp</code>. Covered by <code>tests/testthat/test-explicit-zeros.R</code>, including a finite-difference check that the recovered derivative is correct and not merely present.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.1" id="diffcp-011">diffcp 0.1.1<a class="anchor" aria-label="anchor" href="#diffcp-011"></a></h2><p class="text-muted">CRAN release: 2026-05-27</p>
 <ul><li>Fix <code>scs</code> issue with adaptive scaling triggered on R with <em>no long double</em> and also with MKL tolerance.</li>
 <li>Fix typo issues pointed out by CRAN.</li>
 </ul></div>
@@ -77,7 +82,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

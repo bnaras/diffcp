@@ -23,13 +23,13 @@ Source:
 
 Narasimhan B, Agrawal A, Barratt S, Boyd S, Busseti E, Moursi W (2026).
 *diffcp: Differentiating Through Cone Programs*. R package version
-0.1.1, <https://bnaras.github.io/diffcp/>.
+0.1.2, <https://bnaras.github.io/diffcp/>.
 
     @Manual{,
       title = {{diffcp}: Differentiating Through Cone Programs},
       author = {Balasubramanian Narasimhan and Akshay Agrawal and Shane Barratt and Stephen Boyd and Enzo Busseti and Walaa Moursi},
       year = {2026},
-      note = {R package version 0.1.1},
+      note = {R package version 0.1.2},
       url = {https://bnaras.github.io/diffcp/},
     }
 
