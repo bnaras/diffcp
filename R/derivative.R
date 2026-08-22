@@ -55,15 +55,25 @@
 # -- Build the closures used by `solve_and_derivative` ------------
 ## DIFFCP SOURCE: diffcp/cone_program.py:696-774 (derivative +
 ## adjoint_derivative closures).
-.make_derivative_closures <- function(A, b, c, x, y, s, cones, mode) {
+## `pattern` is the sparsity pattern `dA` is reported on, as a
+## `Matrix::summary()` data frame (1-based `i`, `j`).  The caller supplies it
+## because it must be read BEFORE explicit zeros are eliminated -- see the long
+## comment at the `A_pattern <- ...` line in `solve_and_derivative`
+## (cone_program.R), and DIFFCP SOURCE cone_program.py:643-653.  When it is
+## NULL the pattern is derived from `A` as before, so a direct caller that
+## passes an already-cleaned `A` is unaffected.
+.make_derivative_closures <- function(A, b, c, x, y, s, cones, mode,
+                                      pattern = NULL) {
   if (!mode %in% c("dense", "lsqr")) {
     cli::cli_abort("Unsupported mode {.val {mode}}; supported: 'dense', 'lsqr'.")
   }
   m <- nrow(A); n <- ncol(A); N <- m + n + 1L
 
+  ## The SOLVE / Q path always uses the eliminated matrix: the C++ routines
+  ## (cpp_lsqr_M, cpp_M_dense) see exactly what they saw before this change.
   A_drop <- Matrix::drop0(A)
   A_csc  <- methods::as(A_drop, "CsparseMatrix")
-  nz <- Matrix::summary(A_csc)
+  nz <- if (is.null(pattern)) Matrix::summary(A_csc) else pattern
   rows <- nz$i  # 1-based
   cols <- nz$j  # 1-based
 
