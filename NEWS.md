@@ -1,3 +1,11 @@
+# diffcp 0.1.2
+
+* `solve_and_derivative()` now reports `dA` on the sparsity pattern of `A`
+  **including any explicit zeros**, matching Python `diffcp`. Covered
+  by `tests/testthat/test-explicit-zeros.R`, including a
+  finite-difference check that the recovered derivative is correct and
+  not merely present. 
+
 # diffcp 0.1.1
 
 * Fix `scs` issue with adaptive scaling triggered on R with _no long

@@ -351,6 +351,30 @@ solve_and_derivative <- function(A, b, c, cone_dict,
     ))
   }
   if (any(is.nan(A@x))) cli::cli_abort("Found a NaN in {.arg A}.")
+
+  ## Capture the sparsity pattern of `A` INCLUDING any explicit zeros, BEFORE
+  ## eliminating them.  `dA` is reported on this pattern, so an entry that is
+  ## structurally present but numerically zero still gets a derivative.
+  ##
+  ## DIFFCP SOURCE: cone_program.py:643-653, which is explicit about it:
+  ##     A.data[A.data == 0] = np.nan   # op1: mark the explicit zeros
+  ##     rows, cols = A.nonzero()       # op2: capture the pattern WITH them
+  ##     A.data[np.isnan(A.data)] = 0.0 # op3: restore
+  ##     A.eliminate_zeros()            # the solver gets a clean A
+  ## and then builds `dA` on that captured `(rows, cols)` at :771 / :891.
+  ##
+  ## R needs no op1/op3: `Matrix::summary()` on a dgCMatrix lists STORED
+  ## entries, explicit zeros included, so the pattern can be read directly.
+  ## Do NOT "restore parity" by adding the NaN marking back -- it would be a
+  ## no-op here at best, and `A@x` is shared structure.
+  ##
+  ## Why this matters: a caller that differentiates with respect to a
+  ## parameter driving an entry of `A` stores that entry EXPLICITLY, even when
+  ## its current value is 0 (CVXPY calls this `keep_zeros`, and it is the sole
+  ## reason its DIFFCP interface overrides `apply`).  Dropping the zero first
+  ## removed the entry from `dA` altogether and the parameter's gradient came
+  ## back as exactly 0 -- silently, with no error and no warning.
+  A_pattern <- Matrix::summary(methods::as(A, "CsparseMatrix"))
   A <- Matrix::drop0(A)
 
   res <- .solve_internal(A, b, c, cone_dict,
@@ -360,7 +384,8 @@ solve_and_derivative <- function(A, b, c, cone_dict,
   x <- res$x; y <- res$y; s <- res$s
 
   cones <- parse_cone_dict(cone_dict)
-  closures <- .make_derivative_closures(A, b, c, x, y, s, cones, mode)
+  closures <- .make_derivative_closures(A, b, c, x, y, s, cones, mode,
+                                        pattern = A_pattern)
 
   list(x = x, y = y, s = s, info = res$info,
        D = closures$D, DT = closures$DT)
