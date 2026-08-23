@@ -19,7 +19,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/bnaras/diffcp/blob/master/inst/CITATION)
+[`inst/CITATION`](https://github.com/bnaras/diffcp/blob/v0.1.2/inst/CITATION)
 
 Narasimhan B, Agrawal A, Barratt S, Boyd S, Busseti E, Moursi W (2026).
 *diffcp: Differentiating Through Cone Programs*. R package version

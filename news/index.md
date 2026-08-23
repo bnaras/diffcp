@@ -2,6 +2,8 @@
 
 ## diffcp 0.1.2
 
+CRAN release: 2026-08-22
+
 - [`solve_and_derivative()`](https://bnaras.github.io/diffcp/reference/solve_and_derivative.md)
   now reports `dA` on the sparsity pattern of `A` **including any
   explicit zeros**, matching Python `diffcp`. Covered by
